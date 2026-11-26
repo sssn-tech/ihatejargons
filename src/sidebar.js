@@ -11,14 +11,14 @@ export function chatKey(raw) {
 }
 const idAttr="data-app-action-sidebar-thread-id";
 const states={
-  untouched:["○","未触达"],queued:["◷","等待预译"],running:["◐","正在翻译"],
-  done:["✓","近期回复已缓存"],partial:["◒","部分已缓存"],error:["!","预译失败"]
+  untouched:["○","未触达"],queued:["◷","等待预翻译"],running:["◐","正在翻译"],
+  done:["✓","近期回复已缓存"],partial:["◒","部分已缓存"],error:["!","预翻译失败"]
 };
 export const sidebarStyle=`
 [data-ihj-row]{position:relative;padding-inline-start:24px!important}
 .ihj-indicator{position:absolute;inset-inline-start:2px;top:50%;transform:translateY(-50%);width:20px;height:22px;display:grid;place-items:center;border:0;background:transparent;color:inherit;opacity:.58;font:14px/1 system-ui;border-radius:4px;cursor:pointer}
 .ihj-indicator[data-state=running],.ihj-indicator[data-state=queued]{color:var(--color-text-accent,#538aca);opacity:1}
-.ihj-indicator[data-state=done]{color:var(--color-text-success,#449b75);opacity:1}
+.ihj-indicator[data-state=done]{color:inherit;opacity:.82}
 .ihj-indicator[data-state=error]{color:var(--color-text-danger,#c86c45);opacity:1}
 .ihj-indicator:hover,.ihj-indicator:focus-visible{background:color-mix(in srgb,currentColor 14%,transparent);opacity:1}
 .ihj-chat-menu{position:fixed;z-index:2147483645;box-sizing:border-box;width:min(260px,94vw);padding:10px;display:grid;gap:5px;border-radius:9px;border:1px solid GrayText;box-shadow:0 4px 20px #0003;color-scheme:light dark;background:Canvas;color:CanvasText;font:13px/1.5 system-ui}
@@ -55,7 +55,7 @@ export function chatSidebar(node,listen,operate) {
     menu.innerHTML='<strong></strong><output></output>';
     menu.querySelector("strong").textContent=row.getAttribute("data-app-action-sidebar-thread-title") || "聊天翻译";
     const panel=menu;
-    for(const [action,label] of [["warm","预译最近回复"],["regenerate","重新翻译最近回复"],["delete","删除本聊天全部译文缓存"]]) {
+    for(const [action,label] of [["warm","预翻译最近回复"],["regenerate","重新翻译最近回复"],["delete","删除本聊天全部译文缓存"]]) {
       const ctl=document.createElement("button");ctl.type="button";ctl.textContent=label;
       ctl.onclick=async()=>{
         for (const el of panel.querySelectorAll("button")) el.disabled=true;

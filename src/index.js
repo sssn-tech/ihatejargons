@@ -3,57 +3,40 @@ import { matchAppearance } from "./appearance.js";
 import { chatSidebar, sidebarStyle, threadRow, chatKey } from "./sidebar.js";
 import { levelSignature } from "./levels.js";
 import { defaults } from "./preferences.js";
+import { settingsStyle } from "./settings-style.js";
 import { mountSettings } from "./settings.js";
 import { localSettingsPage } from "./settings-page.js";
+import { logo } from "./logo.js";
 
 import { jargonUI, jargonStyle } from "./jargon-ui.js";
 
-const css = jargonStyle + sidebarStyle + `
+const css = jargonStyle + sidebarStyle + settingsStyle + `
 [data-cxt-hidden] { display:none !important }
 [data-cxt-view] { color:inherit; font:inherit; line-height:inherit; margin-block:.4em; overflow-wrap:anywhere }
 [data-cxt-view] .cxt-text {overflow-wrap:anywhere}
-[data-cxt-view] .cxt-mark {display:block; font:600 11px/1.5 system-ui; color:#166b59; letter-spacing:.015em}
-@media(prefers-color-scheme:dark){[data-cxt-view] .cxt-mark{color:#7ad9bb}}
 [data-cxt-view] .cxt-text > :first-child {margin-top:0}
 [data-cxt-view] .cxt-text > :last-child {margin-bottom:0}
 [data-cxt-view] .cxt-text :is(ul,ol){padding-inline-start:1.5em}
 [data-cxt-view] .cxt-text ul{list-style:disc}
 [data-cxt-view] .cxt-text ol{list-style:decimal}
 [data-cxt-view] .cxt-text p{margin-block:.45em}
-[data-cxt-view] .cxt-mark:first-child {margin-bottom:3px}
-[data-cxt-view] .cxt-mark:last-child {margin-top:3px}
 [data-cxt-view] .ihj-controls{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-block:3px 6px;font:12px/1.4 system-ui}
 .ihj-modes{display:inline-flex;flex-wrap:wrap;gap:2px;padding:2px;border:1px solid color-mix(in srgb,currentColor 19%,transparent);border-radius:8px}
 [data-cxt-view] .ihj-modes button{font:inherit;color:inherit;background:transparent;cursor:pointer;border:0;border-radius:5px;padding:3px 9px;white-space:nowrap}
 [data-cxt-view] .ihj-modes button:hover{background:color-mix(in srgb,currentColor 8%,transparent)}
-[data-cxt-view] .ihj-modes button[aria-pressed=true]{font-weight:650;background:color-mix(in srgb,currentColor 16%,transparent)}
+[data-cxt-view] .ihj-modes button[aria-pressed=true]{background:color-mix(in srgb,currentColor 16%,transparent)}
 .ihj-controls button:focus-visible{outline:2px solid currentColor;outline-offset:1px}
-.ihj-status{font-size:12px;color:inherit;opacity:.82}
-.ihj-status[data-working]::before{content:"";display:inline-block;width:6px;height:6px;background:currentColor;border-radius:50%;vertical-align:middle;margin-right:5px;animation:ihj-pulse 1.4s ease-in-out infinite alternate}
-@keyframes ihj-pulse{to{opacity:.3}}
-@media(prefers-reduced-motion:reduce){.ihj-status[data-working]::before{animation:none}}
-.ihj-controls .ihj-retry{cursor:pointer;text-decoration:underline;font:inherit}
+.ihj-actions{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;color:color-mix(in srgb,currentColor 68%,transparent)}
+.ihj-status{font:inherit;min-inline-size:4em}
+.ihj-actions button{font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;padding:2px 0 2px 8px;border-inline-start:1px solid color-mix(in srgb,currentColor 28%,transparent)}
+.ihj-actions button:hover:enabled{text-decoration:underline}
+.ihj-actions button:disabled{opacity:.52;cursor:default}
 [data-cxt-view] [hidden]{display:none!important}
 [data-cxt-view][hidden] {display:none !important}
-.cxt-settings {display:grid;gap:14px;padding:20px;max-width:38em}
-.ihj-rail-settings{display:grid;place-items:center;align-self:center;flex:none;width:32px;height:32px;border-radius:8px;background:transparent;color:inherit;font:600 16px/1 system-ui;cursor:pointer;-webkit-app-region:no-drag}
+.ihj-rail-settings{display:grid;place-items:center;align-self:center;flex:none;width:32px;height:32px;border-radius:8px;background:transparent;color:inherit;border:0;padding:0;cursor:pointer;-webkit-app-region:no-drag}
 .ihj-rail-settings[aria-current="page"],.ihj-rail-settings:hover,.ihj-rail-settings:focus-visible{background:color-mix(in srgb,currentColor 12%,transparent)}
 main:has(>.ihj-settings-page)>:not(.ihj-settings-page){display:none!important}
-.ihj-settings-page{flex:1 1 auto;min-height:0;height:100%;width:100%;overflow:auto;padding:24px clamp(12px,4vw,64px);box-sizing:border-box}
-.ihj-settings-page>.cxt-settings{margin-inline:auto;width:100%;box-sizing:border-box}
-details.nmj-library{display:block;padding:0 20px 20px}
-.nmj-library>summary{cursor:pointer;font-weight:600;padding:10px 0;border-block-start:1px solid color-mix(in srgb,currentColor 18%,transparent)}
-.nmj-library>summary small{font-weight:400;opacity:.7;margin-inline-start:8px}
-.nmj-library .ihj-library-body{display:grid;gap:8px}
-.ihj-controls .ihj-regen{font:inherit;color:inherit;opacity:.75;cursor:pointer}
-.cxt-settings [hidden]{display:none!important}
-.ihj-warm-levels{display:flex;gap:10px;flex-wrap:wrap}
-.cxt-settings .ihj-warm-levels label{display:flex;align-items:center;gap:4px}
-.cxt-settings fieldset{display:grid;gap:10px;border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:8px;padding:12px}
-.cxt-settings legend{font-weight:600;padding:0 4px}
-.cxt-settings textarea{width:100%;font:inherit;border:1px solid GrayText;border-radius:5px;padding:6px;resize:vertical}
-.cxt-settings label {display:grid;gap:4px}
-.cxt-settings :is(input,select,button){border:1px solid currentColor;border-radius:5px;padding:5px 8px}
+.ihj-settings-page{flex:1 1 auto;min-height:0;height:100%;width:100%;overflow:auto;padding:24px clamp(12px,4vw,64px) 0;box-sizing:border-box}
 `;
 const settleMs = {summary:350, report:1200};
 function sameProtected(a,b) {
@@ -63,12 +46,11 @@ const generated = '[data-cxt-view],[data-ihj-sidebar],.cxt-settings';
 
 export function activate({ node, ui, onCleanup }) {
   if (!node) throw Error("ihatejargons 需要启用本地 Node 后端。");
-  let config, stopped = false, busy = false, timer = 0, detecting = false;
+  let config, stopped = false, translating = 0, timer = 0;
   const records = new Map();
   let submitted = new WeakMap();
   const chatKeys = new WeakMap();
   function levelFor(mode) { return config.levels.find(p=>p.id===mode); }
-  function nameOf(mode) { return levelFor(mode)?.name || "原文注释"; }
   const mountPage=container=>mountSettings(container,node);
   const registration=ui?.settingsSections?.register({id:"codex-translator",mount:mountPage});
   const localPage=registration?.open ? null : localSettingsPage(mountPage);
@@ -90,7 +72,7 @@ export function activate({ node, ui, onCleanup }) {
         button.type="button";
         button.className="ihj-rail-settings";
         button.dataset.ihjSidebar="";
-        button.textContent="译";
+        button.innerHTML=logo(18);
         button.title="ihatejargons 设置";
         button.setAttribute("aria-label",button.title);
         button.onclick=e=>{
@@ -182,17 +164,7 @@ export function activate({ node, ui, onCleanup }) {
     historyGeneration++; clearInterval(historyTimer); histories.clear(); historyPaused=false;
     void loadHistory(); historyTimer=setInterval(loadHistory,60000);
   }
-  const jargon = jargonUI(node, records, listen);
-  async function detect(rec) {
-    detecting = true;
-    const task = rec.task;
-    rec.detectStarted = true;
-    const labels = new Map(rec.task.terms.map(item=>[item.token,item.label]));
-    const source = rec.task.target.replace(/⟦T\d+⟧/g,token=>labels.get(token) || " ");
-    try { jargon.apply(await node.invoke("glossary-detect",{source})); }
-    catch (error) { if (rec.task===task) rec.detectError = error.message || "术语识别失败"; }
-    finally { detecting = false; schedule(); }
-  }
+  const jargon = jargonUI(node, records, listen, schedule);
   function drop(rec) {
     for (const source of rec.sources) source.removeAttribute("data-cxt-hidden");
     rec.view?.remove();
@@ -215,25 +187,22 @@ export function activate({ node, ui, onCleanup }) {
     }
     return true;
   }
-  function mark(text) {
-    const el = document.createElement("span");
-    el.className = "cxt-mark";
-    el.textContent = text;
-    return el;
-  }
   function mount(rec) {
     const source = rec.source;
     const view = document.createElement(["LI","TD","TH"].includes(source.tagName) ? source.tagName : "div");
     if (source.matches("td,th")) { view.colSpan = source.colSpan; view.rowSpan = source.rowSpan; }
     view.dataset.cxtView = "";
     view.setAttribute("data-markdown-copy","exclude");
-    view.innerHTML = '<div class="ihj-controls"><div class="ihj-modes" role="group" aria-label="阅读方式"></div><span class="ihj-status" role="status" aria-live="polite"></span><button type="button" class="ihj-retry" hidden>重试</button><button type="button" class="ihj-regen">重新生成</button></div><div class="cxt-text" hidden></div>';
+    view.innerHTML = '<div class="ihj-controls"><div class="ihj-modes" role="group" aria-label="阅读方式"></div><div class="ihj-actions"><span class="ihj-status" role="status" aria-live="polite"></span><button type="button" class="ihj-retry" hidden>重试注释</button><button type="button" class="ihj-regen">重新生成</button></div></div><div class="cxt-text" hidden></div>';
     rec.view = view;
     rec.body = view.querySelector(".cxt-text");
     rec.status = view.querySelector(".ihj-status");
     rec.retry = view.querySelector(".ihj-retry");
     rec.regen=view.querySelector(".ihj-regen");
-    rec.regen.onclick=()=>regenerate(rec);
+    rec.regen.onclick=()=>{
+      if (rec.mode==="original") selectMode(rec,rec.lastMode);
+      regenerate(rec);
+    };
     rec.buttons = [];
     for (const {id:mode,name:label} of [{id:"original",name:"原文注释"},...config.levels]) {
       const button = document.createElement("button");
@@ -246,8 +215,9 @@ export function activate({ node, ui, onCleanup }) {
       rec.buttons.push(button);
     }
     rec.retry.onclick = () => {
-      if (rec.mode==="original") { rec.detectStarted = false; rec.detectError = ""; }
-      else { regenerate(rec); return; }
+      for (const job of rec.annotations.get(rec.mode)?.jobs || []) {
+        if (job.state==="failed") job.state="waiting";
+      }
       rec.priority = true;
       paint(rec); schedule();
     };
@@ -263,13 +233,14 @@ export function activate({ node, ui, onCleanup }) {
   function regenerate(rec) {
     if (rec.mode==="original" || rec.pending===rec.mode) return;
     delete rec.outputs[rec.mode]; delete rec.errors[rec.mode];
+    rec.annotations.delete(rec.mode);
     rec.rendered=null; rec.force=rec.mode; rec.priority=true;
     rec.lookups.set(rec.mode,true);
     paint(rec); schedule();
   }
   function lookup(rec) {
-    const task=rec.task, mode=rec.mode;
-    if (mode==="original" || rec.lookups.has(mode) || rec.outputs[mode]) return;
+    const task=rec.task, mode=rec.mode==="original" ? rec.lastMode : rec.mode;
+    if (rec.lookups.has(mode) || rec.outputs[mode]) return;
     const token={}; rec.lookups.set(mode,token);
     void node.invoke("cache-lookup",{chat:rec.owner,task:{...effectiveTask(rec),mode}}).then(output=>{
       if (records.get(rec.source)!==rec || rec.task!==task || rec.lookups.get(mode)!==token) return;
@@ -304,51 +275,22 @@ export function activate({ node, ui, onCleanup }) {
       const pressed = String(button.dataset.mode===mode);
       if (button.getAttribute("aria-pressed")!==pressed) button.setAttribute("aria-pressed",pressed);
     }
-    const error = mode==="original" ? rec.detectError : rec.errors[mode];
-    let message = "", working = false;
-    if (error) message = "ihatejargons · " + error;
-    else if (rec.pending) {
-      working = true;
-      const background = mode===rec.pending ? "" : "后台";
-      message = "ihatejargons · " + background + "正在生成「" + nameOf(rec.pending) + "」…";
-      if (!translated && mode!=="original" && mode!==rec.pending) message += "「"+nameOf(mode)+"」已排队";
-    } else if (mode!=="original" && !translated) {
-      message = "ihatejargons · " + (rec.streaming ? "等待原文写完…" : "等待生成「"+nameOf(mode)+"」…");
-    }
-    rec.status.toggleAttribute("data-working",working);
-    if (rec.status.textContent!==message) rec.status.textContent = message;
-    rec.retry.hidden = !error;
-    rec.regen.hidden = !translated; rec.regen.disabled = rec.pending===mode;
-  }
-  function groupMarks(jobs) {
-    const groups = new Map();
-    for (const job of jobs) {
-      const rec = records.get(job.sources[0]);
-      if (!rec?.view) continue;
-      if (rec.body.hidden || !rec.view.checkVisibility()) {
-        for (const label of rec.view.querySelectorAll("[data-cxt-mark]")) label.remove();
-        continue;
-      }
-      if (!groups.has(job.group)) groups.set(job.group, []);
-      groups.get(job.group).push(rec);
-    }
-    for (const members of groups.values()) {
-      members.forEach((rec, i) => {
-        for (const [position, needed] of [["start",i===0],["end",i===members.length-1]]) {
-          const current = rec.view.querySelector('[data-cxt-mark="'+position+'"]');
-          if (!needed) { current?.remove(); continue; }
-          if (current) continue;
-          const label = mark("由 ihatejargons 翻译 · " + (position==="start"?"开始":"结束"));
-          label.dataset.cxtMark = position;
-          if (position==="start") rec.view.prepend(label); else rec.view.append(label);
-        }
-      });
-    }
+    const target = mode==="original" ? rec.lastMode : mode;
+    const working = rec.pending===target;
+    const error = rec.errors[target];
+    const state = working ? "正在翻译" : error ? "翻译失败" : rec.outputs[target] ? "已经翻译" : "尚未翻译";
+    if (rec.status.textContent!==state) rec.status.textContent=state;
+    rec.status.title = levelFor(target).name + " · " + (error || state);
+    const failed=rec.annotations.get(mode)?.jobs.find(job=>job.state==="failed");
+    rec.retry.hidden=!failed;
+    if (failed) rec.retry.title=failed.error;
+    rec.regen.disabled = working || rec.streaming;
+    rec.regen.title = rec.streaming ? "等待原文写完" : "重新生成「" + levelFor(target).name + "」";
   }
   async function send(rec) {
     const task = rec.task, mode = rec.mode;
     const force=rec.force===mode; if (force) rec.force=null;
-    busy = true; rec.pending = mode; rec.priority = false;
+    translating++; rec.pending = mode; rec.priority = false;
     paint(rec);
     const current = () => !stopped && records.get(rec.source)===rec && rec.task===task && rec.source.isConnected;
     try {
@@ -360,7 +302,7 @@ export function activate({ node, ui, onCleanup }) {
     } catch (e) {
       if (current()) rec.errors[mode] = e.message || "翻译失败";
     } finally {
-      busy = false;
+      translating--;
       if (current()) { rec.pending = null; paint(rec); jargon.refresh(); }
       schedule();
     }
@@ -383,7 +325,8 @@ export function activate({ node, ui, onCleanup }) {
       for (const [chat,list] of recentByChat) recentByChat.set(chat,list.slice(-config.recentBlocks));
     }
     const warmJobs=new Set([...recentByChat.values()].flat());
-    let waiting = false, next;
+    let waiting = false;
+    const next=[], annotate=[];
     for (const job of jobs) {
       const source = job.sources[0];
       let rec = records.get(source);
@@ -410,7 +353,7 @@ export function activate({ node, ui, onCleanup }) {
         const task = {kind:job.kind,...contextFor(job),target:snap.text,terms:snap.terms};
         Object.assign(rec,job,{task,original:nativeText,originalQuestion:question,
           nodes:snap.protectedNodes,ready:Date.now()+settleMs[job.kind],outputs:{},errors:{},rendered:null,
-          pending:null,detectStarted:false,detectError:"",lookups:new Map(),force:null});
+          pending:null,annotations:new Map(),lookups:new Map(),force:null});
       }
       rec.streaming = job.kind==="report" && job.sources.some(el=>el.closest('[aria-busy="true"],[data-streaming="true"]') ||
           el.querySelector('[data-markdown-animated="true"]'));
@@ -419,11 +362,13 @@ export function activate({ node, ui, onCleanup }) {
       if (rec.streaming) continue;
       if (Date.now()<rec.ready) { waiting=true; continue; }
       if (!visible) continue;
-      if (!detecting && !rec.detectStarted) void detect(rec);
-      if (!busy && rec.lookups.get(rec.mode)===true && rec.mode!=="original" && !rec.outputs[rec.mode] && !rec.errors[rec.mode] &&
-          (!next || (rec.priority && !next.priority))) next=rec;
+      if (!rec.pending && rec.lookups.get(rec.mode)===true && rec.mode!=="original" &&
+          !rec.outputs[rec.mode] && !rec.errors[rec.mode]) next.push(rec);
+      if (rec.mode==="original" || !rec.body.hidden) annotate.push(rec);
     }
-    if (next) void send(next);
+    next.sort((a,b)=>Number(Boolean(b.priority))-Number(Boolean(a.priority)));
+    for (const rec of next.slice(0,Math.max(0,config.textConcurrency-translating))) void send(rec);
+    for (const rec of annotate) jargon.queue(rec,config.termConcurrency);
     for (const [chat,list] of recentByChat) {
       const tasks=list.map(job=>records.get(job.sources[0])).filter(rec=>rec && !rec.streaming && Date.now()>=rec.ready).map(rec=>rec.task);
       const previous=submitted.get(chat);
@@ -432,7 +377,6 @@ export function activate({ node, ui, onCleanup }) {
       const id=chatId(chat);
       if (!histories.get(id)?.jobs.length) void node.invoke("recent-chat",{chat:id,tasks}).catch(()=>{});
     }
-    groupMarks(jobs);
     jargon.refresh();
     if (waiting) schedule(150);
   }
@@ -453,20 +397,8 @@ export function activate({ node, ui, onCleanup }) {
     attributeFilter:["hidden","aria-expanded","data-state","data-markdown-text-style","inert","aria-busy","data-streaming","data-markdown-animated","data-app-action-sidebar-thread-id","data-app-action-sidebar-thread-active","data-app-action-sidebar-thread-selected"]});
   listen(window, "scroll", () => schedule(), {capture:true, passive:true});
   listen(window, "resize", () => schedule());
-  listen(document, "click", e => {
-    if (e.button!==0 || e.detail!==3 || e.target.closest("a,button,input,select,textarea,[contenteditable=true],[role=button],.nmj-popup")) return;
-    for (const rec of records.values()) {
-      if (!rec.view) continue;
-      const inside = rec.body.hidden ? rec.sources.some(el=>el.contains(e.target)) : rec.body.contains(e.target);
-      if (!inside) continue;
-      e.preventDefault();
-      window.getSelection()?.removeAllRanges();
-      selectMode(rec,rec.mode==="original" ? rec.lastMode : "original");
-      break;
-    }
-  }, {capture:true});
   function resetOutputs(rec) {
-    rec.task={...rec.task};rec.outputs={};rec.errors={};rec.lookups=new Map();
+    rec.task={...rec.task};rec.annotations=new Map();rec.outputs={};rec.errors={};rec.lookups=new Map();
     rec.rendered=null;rec.pending=null;rec.mode="original";rec.force=null;paint(rec);
   }
   const deleted=node.on("chat-cache-deleted",({chat})=>{

@@ -1,10 +1,11 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
 const envFile = join(homedir(), ".config/minicode/siliconflow.env");
 import { translationMessages } from "./prompt.js";
+import { requestPool } from "./request-pool.js";
 import { registerGlossary } from "./glossary.js";
 import { openPlans } from "./chat-plans.js";
 import { readRecent } from "./recent-history.js";
@@ -14,13 +15,30 @@ import { builtInLevels, levelSignature } from "./levels.js";
 import { buildIdentity, digest, openCache } from "./translation-cache.js";
 export { defaults };
 
-async function siliconKey() {
+// Where the SiliconFlow key comes from, in order: the key saved from the settings page
+// (plugin data directory, mode 600), the SILICONFLOW_API_KEY environment variable, then the
+// older ~/.config/minicode/siliconflow.env file.
+let savedKeyFile = null;
+
+async function readKey() {
+  if (savedKeyFile) {
+    try {
+      const key = (await readFile(savedKeyFile, "utf8")).trim();
+      if (key) return {key, source:"plugin"};
+    } catch (error) { if (error.code !== "ENOENT") throw Error("无法读取已保存的密钥。"); }
+  }
+  if (process.env.SILICONFLOW_API_KEY?.trim()) return {key:process.env.SILICONFLOW_API_KEY.trim(), source:"env"};
   let env;
   try { env = await readFile(envFile, "utf8"); }
-  catch { throw Error("无法读取 ~/.config/minicode/siliconflow.env。"); }
+  catch { return {key:"", source:"none"}; }
   const m = env.match(/^\s*(?:export\s+)?SILICONFLOW_API_KEY\s*=\s*(?:"([^"\n]+)"|'([^'\n]+)'|([^\s#]+))\s*(?:#.*)?$/m);
   const key = m && (m[1] || m[2] || m[3]);
-  if (!key) throw Error("密钥文件缺少 SILICONFLOW_API_KEY。");
+  return key ? {key, source:"file"} : {key:"", source:"none"};
+}
+
+async function siliconKey() {
+  const {key} = await readKey();
+  if (!key) throw Error("还没有设置硅基流动 API 密钥，请在 ihatejargons 设置页填写。");
   return key;
 }
 
@@ -115,18 +133,21 @@ export async function readSettings(path) {
 
 export async function activate({ rpc, packageDirectory, dataDirectory, signal }) {
   const path = join(dataDirectory, "settings.json");
+  savedKeyFile = join(dataDirectory, "siliconflow-key");
   let settings = await readSettings(path);
   const build = await buildIdentity(packageDirectory);
   const cache = await openCache(dataDirectory,build,settings.cacheMB);
   const plans=await openPlans(dataDirectory,build);
   const recent=new Map(), manual=new Map(), attempted=new Set(), errors=new Map(), active=new Map();
-  let warmingChat=null;
+  const warming = new Map();
+  const textPool=requestPool(()=>settings.textConcurrency);
+  const termPool=requestPool(()=>settings.termConcurrency);
   const owner=id=>digest(String(id));
   const notify=()=>rpc.emit("chat-state-change",{});
   function settingsKey() {
     return digest(JSON.stringify([settings.provider,settings.cloudModel,settings.localModel,settings.levels.filter(p=>settings.warmModes.includes(p.id) || (!settings.warmModes.length && p.id===settings.defaultMode)).map(levelSignature),settings.recentBlocks]));
   }
-  let warmMessage="", warmTimer, warming = false, foreground = 0, closed = false;
+  let warmMessage="", warmTimer, foreground = 0, closed = false;
   function identify(task, config=settings, chat="") {
     const level = config.levels.find(p=>p.id===task.mode);
     if (!level) throw Error("翻译等级已更改。");
@@ -134,25 +155,31 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
       level.id,level.prompt,level.format,level.layout,task.kind,task.target,task.question,task.history.map(v=>[v.role,v.text]),(task.terms || []).map(v=>[v.token,v.label])]));
   }
   function scheduleWarm() {
-    if (closed || warmTimer || warming || foreground || !settings.cacheMB) return;
-    warmTimer=setTimeout(()=>{warmTimer=null;void warmOne();},450);
+    if (closed || warmTimer || foreground || warming.size>=settings.textConcurrency || !settings.cacheMB) return;
+    warmTimer=setTimeout(()=>{warmTimer=null;fillWarmSlots();},450);
   }
-  async function warmOne() {
-    if (closed || foreground || warming || !settings.cacheMB) return;
-    const queues=[...manual.entries(),...Array.from(recent.entries()).reverse()];
-    for (const [chat,jobs] of queues) {
+  async function runWarm(chat,jobs,job) {
+    warming.set(job.key,chat);
+    attempted.add(job.key);
+    notify();
+    const current=()=>manual.get(chat)===jobs || recent.get(chat)===jobs;
+    try {
+      const result=await cache.run(job.key,()=>textPool.run(()=>translate(job.task,job.config,signal),true),job.force);
+      if (!closed && job.force && manual.get(chat)===jobs && cache.has(job.key))
+        rpc.emit("chat-regenerated",{chat,task:job.task,output:result});
+    } catch(e) {
+      if (current()) {errors.set(chat,e.message);warmMessage=e.message;}
+    } finally {warming.delete(job.key);notify();scheduleWarm();}
+  }
+  function fillWarmSlots() {
+    if (closed || foreground || !settings.cacheMB) return;
+    for (const [chat,jobs] of [...manual,...Array.from(recent).reverse()]) {
       for (const job of jobs) {
-        if (attempted.has(job.key) || (!job.force && cache.has(job.key))) continue;
-        attempted.add(job.key); warming=true; warmingChat=chat; notify();
-        try {
-          const result=await cache.run(job.key,()=>translate(job.task,job.config,signal),job.force);
-          if(job.force && manual.get(chat)===jobs && cache.has(job.key)) rpc.emit("chat-regenerated",{chat,task:job.task,output:result});
-        }
-        catch(e) { errors.set(chat,e.message);warmMessage=e.message; }
-        finally { warming=false;warmingChat=null;notify();scheduleWarm(); }
-        return;
+        if (warming.size>=settings.textConcurrency) return;
+        if (warming.has(job.key) || attempted.has(job.key) || (!job.force && cache.has(job.key))) continue;
+        void runWarm(chat,jobs,job);
       }
-      if(manual.get(chat)===jobs) manual.delete(chat);
+      if (manual.get(chat)===jobs && !jobs.some(job=>warming.has(job.key))) manual.delete(chat);
     }
   }
   function trimRecent() {
@@ -161,7 +188,7 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
     for(const key of attempted) if(!keep.has(key)) attempted.delete(key);
   }
   async function enqueue({chat,tasks,historical=false,action=null}) {
-    if (typeof chat!=="string" || !chat || !Array.isArray(tasks) || tasks.length>30) throw Error("预译任务格式不正确。");
+    if (typeof chat!=="string" || !chat || !Array.isArray(tasks) || tasks.length>30) throw Error("预翻译任务格式不正确。");
     const ownerId=owner(chat);
     if (!action && (plans.get(ownerId)?.suppressed || (historical && !settings.includeHistory) || !settings.recentChats || !settings.warmModes.length)) return false;
     if (!settings.cacheMB) {if(action) throw Error("请先在设置中启用本地缓存。");return false;}
@@ -194,7 +221,7 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
       const keys=plan?.settings===stamp ? plan.keys || [] : [];
       const done=keys.filter(k=>cache.has(k)).length, entries=counts.get(id)||0;
       const queued=(manual.get(chat)||recent.get(chat)||[]).some(j=>!attempted.has(j.key) && (j.force || !cache.has(j.key)));
-      const state=warmingChat===chat || active.has(chat) ? "running" : queued ? "queued" :
+      const state=[...warming.values()].includes(chat) || active.has(chat) ? "running" : queued ? "queued" :
         keys.length && done===keys.length ? "done" : errors.has(chat) ? "error" : entries ? "partial" : "untouched";
       result[chat]={state,done,total:keys.length,entries,error:errors.get(chat)||""};
     }
@@ -211,7 +238,7 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
   rpc.handle("recent-forget",({chats})=>{for(const id of chats) recent.delete(id);trimRecent();return true;});
   rpc.handle("prewarm",()=>{warmMessage="";attempted.clear();rpc.emit("prewarm-resume",{});scheduleWarm();return true;});
   rpc.handle("history-error",({message})=>{warmMessage=String(message).slice(0,300);return true;});
-  rpc.handle("cache-stats",()=>({...cache.stats(),recent:recent.size,warming,message:warmMessage}));
+  rpc.handle("cache-stats",()=>({...cache.stats(),recent:recent.size,warming:warming.size>0,message:warmMessage}));
   rpc.handle("cache-clear",async ()=>{
     clearTimeout(warmTimer); warmTimer=null; warmMessage=""; recent.clear(); manual.clear(); errors.clear(); attempted.clear();
     const stats=await cache.clear();
@@ -219,9 +246,36 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
   });
   rpc.handle("cache-lookup",({task,chat})=>cache.get(identify(task,settings,chat)));
   let writes = Promise.resolve();
-  await registerGlossary({rpc,dataDirectory}, () => settings, (config,messages) =>
-    modelRequest(config,messages,AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])])), defaults);
+  registerGlossary(rpc, () => settings, (config,messages) =>
+    modelRequest(config,messages,AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])])), defaults,termPool);
   rpc.handle("settings", () => settings);
+  // The key itself never goes back to the renderer; the page only sees where it came from.
+  async function keyStatus() {
+    const {key, source} = await readKey();
+    return {source, hint: key ? "…" + key.slice(-4) : ""};
+  }
+  rpc.handle("key-status", keyStatus);
+  rpc.handle("key-save", async ({key}) => {
+    if (typeof key !== "string") throw Error("密钥格式不正确。");
+    key = key.trim();
+    if (!key) {
+      await unlink(savedKeyFile).catch(error => { if (error.code !== "ENOENT") throw error; });
+      return keyStatus();
+    }
+    if (!/^[\x21-\x7e]{8,200}$/.test(key)) throw Error("密钥应为 8–200 个字符，不含空格。");
+    await mkdir(dataDirectory, { recursive: true });
+    const temp = savedKeyFile + "." + randomUUID();
+    await writeFile(temp, key, { mode: 0o600 });
+    await rename(temp, savedKeyFile);
+    return keyStatus();
+  });
+  // Sends one tiny request with the values on the settings page, saved or not.
+  rpc.handle("check-service", async ({provider, cloudModel, localModel}) => {
+    const config = settingsOf({...settings, provider, cloudModel, localModel});
+    const started = Date.now();
+    await modelRequest(config, [{role:"user", content:"只回复：好"}], AbortSignal.timeout(20000));
+    return {ms: Date.now() - started, model: config.provider === "ollama" ? config.localModel : config.cloudModel};
+  });
   rpc.handle("save-settings", input => {
     const next = settingsOf(input);
     const save = writes.then(async () => {
@@ -231,6 +285,7 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
       await rename(temp, path);
       await cache.resize(next.cacheMB);
       settings = next;
+      textPool.drain();termPool.drain();
       recent.clear();manual.clear();attempted.clear();errors.clear();notify();
       trimRecent(); scheduleWarm();
       rpc.emit("settings-changed", settings);
@@ -246,11 +301,11 @@ export async function activate({ rpc, packageDirectory, dataDirectory, signal })
     if (levelStamp && levelSignature(level)!==levelStamp) throw Error("翻译等级已更改。");
     foreground++;active.set(chat,(active.get(chat)||0)+1);notify();
     try {
-      const output=await cache.run(key,()=>translate(task,config,signal),force===true);
+      const output=await cache.run(key,()=>textPool.run(()=>translate(task,config,signal)),force===true);
       if(force && cache.has(key)) rpc.emit("chat-regenerated",{chat,task,output});
       return output;
     }
     finally { foreground--; const n=active.get(chat)-1;if(n) active.set(chat,n);else active.delete(chat);notify();scheduleWarm(); }
   });
-  return () => { closed=true; clearTimeout(warmTimer); recent.clear(); attempted.clear(); };
+  return () => { closed=true; textPool.close();termPool.close();clearTimeout(warmTimer); recent.clear(); attempted.clear(); };
 }
