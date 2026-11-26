@@ -17,7 +17,7 @@
     "packageDependencies": {},
     "permissions": {
       "node": {
-        "reason": "读取 ~/.config/minicode/siliconflow.env 中的 API 密钥。翻译把问题、前文与目标文字发送给所选服务，术语识别发送目标文字；可选本机 Ollama。词条和设置保存在本机。主动追问时将词条、本词的近期问答和新问题发送给硅基流动 DeepSeek。"
+        "reason": "读取 ~/.config/minicode/siliconflow.env 的 API 密钥；按所选服务向硅基流动或本机 Ollama 发送待译文字和必要前文。启用历史预译或手动预译聊天时，只读本机 Codex 聊天索引和会话文件，提取可见消息及公开摘要。在插件数据目录保存设置、词库和有容量上限的译文缓存。主动追问发送本词近期问答给硅基流动 DeepSeek。"
       }
     },
     "ui": {

@@ -37,7 +37,7 @@ export function matchAppearance(sources, body, mode = "light") {
   }
   const tables = originals.filter(el=>el.localName==="table");
   const translated = Array.from(body.querySelectorAll("table")).filter(el=>!el.closest("pre"));
-  if (mode==="deep" && !translated.length) return;
+  if (mode==="free" || mode==="deep") return;
   if (tables.length !== translated.length) throw Error("译文表格数量与原文不符");
   translated.forEach((table,i)=>matchTable(tables[i],table));
 }

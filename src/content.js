@@ -181,3 +181,32 @@ export function translatedFragment(text,nodes) {
   if(seen.size!==nodes.length) throw Error("译文遗漏了代码或链接标记。");
   return template.content;
 }
+
+const historyMarkdown = new MarkdownIt({html:false,linkify:false});
+// Use the same token, Markdown and context serialization as live replies. A detached
+// document keeps generated links and images inert while reconstructing display text.
+export function historyTasks(items, depth) {
+  const doc=document.implementation.createHTMLDocument("");
+  const history=[], jobs=[];
+  let questionNode, turn;
+  for (const item of items) {
+    if (turn!==item.turn) {turn=item.turn; questionNode=null;}
+    const root=doc.createElement("div");
+    root.innerHTML=historyMarkdown.render(item.text);
+    if (item.role==="user") {
+      questionNode=root;
+      history.push({role:"user",node:root});
+      continue;
+    }
+    if (questionNode) {
+      const sections=item.kind==="summary" ? [...root.querySelectorAll(block)].filter(el=>!el.querySelector(block)) : [];
+      for (const el of sections.length?sections:[root]) {
+        const snap=snapshot([el]);
+        if (!/\p{L}/u.test(snap.text.replace(/⟦T\d+⟧/g,""))) continue;
+        jobs.push({task:{kind:item.kind,...contextFor({history,questionNode,before:history.length}),target:snap.text,terms:snap.terms},turn:item.turn,id:item.id});
+        history.push({role:"assistant",node:el});
+      }
+    } else history.push({role:"assistant",node:root});
+  }
+  return jobs.slice(-depth);
+}
