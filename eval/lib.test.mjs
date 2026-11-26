@@ -1,62 +1,72 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseCase, snapshot, restore, tokenReport, deterministicChecks, parseJudge, score, similarity } from "./lib.mjs";
+import {
+  parseCase, loadCases, snapshot, restore, tokensOk, jargonIn, jargonDelta, similarity,
+  parseAccuracy, parseClarity, settle, readRate, mistakes, words
+} from "./lib.mjs";
 
-test("a case file yields its JSON header and verbatim body", () => {
-  const item = parseCase("x.md", '<!--\n{"id":"x","title":"t","kind":"report","facts":[{"id":"f1","text":"a"}],"traps":[]}\n-->\n\n正文 `x`\n');
-  assert.equal(item.meta.id, "x");
+const header = meta => "<!--\n" + JSON.stringify({ id: "x", type: "fix", kind: "report", question: "q", source: "s",
+  checks: [{ q: "a?", a: "b" }], ...meta }) + "\n-->\n\n";
+
+test("a case keeps its body verbatim and defaults traps to an empty list", () => {
+  const item = parseCase("x.md", header({}) + "正文 `x`\n");
   assert.equal(item.body, "正文 `x`");
+  assert.deepEqual(item.meta.traps, []);
 });
 
-test("a case without traps or facts is rejected", () => {
-  assert.throws(() => parseCase("x.md", '<!--\n{"id":"x","title":"t","kind":"report"}\n-->\n\n正文'), /缺少字段/);
+test("a case needs a type, 1–4 checks and string traps", () => {
+  assert.throws(() => parseCase("x.md", header({ type: "maybe" }) + "正文"), /type/);
+  assert.throws(() => parseCase("x.md", header({ checks: [] }) + "正文"), /checks/);
+  assert.throws(() => parseCase("x.md", header({ traps: [{ id: "t1" }] }) + "正文"), /traps/);
 });
 
-test("snapshot turns inline code into placeholders and labels only field-like values", () => {
-  const { text, terms, labels } = snapshot("状态 `PROMOTION_BLOCKED`，范围 `1% → 10%`，人话 `依赖三态`，节点 `AWS-Tokyo`");
-  assert.equal(text, "状态 ⟦T0⟧，范围 ⟦T1⟧，人话 ⟦T2⟧，节点 ⟦T3⟧");
-  // Snake-case enums and value ranges get a label; hyphenated names and Chinese prose labels do not.
+test("every shipped case loads", async () => {
+  const cases = await loadCases();
+  assert.ok(cases.length >= 20);
+  assert.ok(cases.some(item => item.meta.type === "keep"));
+});
+
+test("snapshot labels only snake_case values and ranges, and restore puts every label back", () => {
+  const { text, terms, labels } = snapshot("状态 `PROMOTION_BLOCKED`，范围 `1% → 10%`，节点 `AWS-Tokyo`，人话 `依赖三态`");
+  // Chinese labels stay in the text for the model to rewrite, as in src/content.js.
+  assert.equal(text, "状态 ⟦T0⟧，范围 ⟦T1⟧，节点 ⟦T2⟧，人话 `依赖三态`");
   assert.deepEqual(labels.map(item => item.label), ["PROMOTION_BLOCKED", "1% → 10%"]);
-  assert.equal(terms.length, 4);
-  assert.equal(restore(text, terms), "状态 PROMOTION_BLOCKED，范围 1% → 10%，人话 依赖三态，节点 AWS-Tokyo");
-  assert.deepEqual(snapshot("`AWS-Tokyo`", { labelAll: true }).labels.map(item => item.label), ["AWS-Tokyo"]);
+  assert.equal(restore(text, terms), "状态 PROMOTION_BLOCKED，范围 1% → 10%，节点 AWS-Tokyo，人话 `依赖三态`");
+  assert.equal(tokensOk("⟦T2⟧ ⟦T0⟧ ⟦T1⟧", terms), true);
+  assert.equal(tokensOk("⟦T0⟧ ⟦T0⟧ ⟦T1⟧", terms), false);
 });
 
-test("tokenReport finds missing, repeated and invented placeholders", () => {
-  const terms = [{ token: "⟦T0⟧" }, { token: "⟦T1⟧" }];
-  assert.equal(tokenReport("⟦T0⟧ 和 ⟦T1⟧", terms).ok, true);
-  assert.deepEqual(tokenReport("⟦T0⟧ 和 ⟦T0⟧", terms).duplicated, ["⟦T0⟧"]);
-  assert.deepEqual(tokenReport("⟦T0⟧ ⟦T7⟧", terms).unknown, ["⟦T7⟧"]);
-  assert.equal(tokenReport("什么都没有", terms).ok, false);
+test("jargon is matched longest first, and the delta separates kept from introduced words", () => {
+  assert.deepEqual([...jargonIn("稳稳兜住之后收口", ["兜住", "稳稳", "收口"])].sort(), ["兜住", "收口", "稳稳"]);
+  assert.deepEqual([...jargonIn("砍一刀", ["一刀", "砍一刀"])], ["砍一刀"]);
+  const delta = jargonDelta("根因坐实，落盘之后就能收口了。", "原因确认了，第一刀算是落地了，之后收口。");
+  assert.deepEqual(delta.source.sort(), ["坐实", "收口"].sort());
+  assert.deepEqual(delta.kept, ["收口"]);
+  assert.deepEqual(delta.added.sort(), ["一刀", "落地"].sort());
+  assert.ok(!words.hard.includes("根因"), "根因 is legitimate in postmortems and stays on the soft list");
 });
 
-test("checks catch a dropped number, a left-in jargon word and a shrunken reply", () => {
-  const item = { body: "延迟从 480ms 降到 160ms，验收矩阵通过，`AWS-Tokyo` 直连。", meta: { jargon: [{ term: "验收矩阵" }] } };
-  const terms = [{ token: "⟦T0⟧", label: "AWS-Tokyo" }];
-  const checks = deterministicChecks(item, "延迟降低了，⟦T0⟧ 直连。", terms);
-  assert.deepEqual(checks.numbersMissing, ["480", "160"]);
-  assert.equal(checks.jargonLeft.includes("验收矩阵"), false);
-  const still = deterministicChecks(item, "验收矩阵通过，延迟从 480ms 降到 160ms。", terms);
-  assert.deepEqual(still.jargonLeft, ["验收矩阵"]);
-  assert.ok(still.similarity > 0.7);
-});
-
-test("judge JSON is parsed and a bad verdict is refused", () => {
-  const good = parseJudge('```json\n{"facts":[{"id":"f1","verdict":"kept"}],"traps":[{"id":"t1","violated":false}],"grade":4}\n```');
-  assert.equal(good.grade, 4);
-  assert.throws(() => parseJudge('{"facts":[{"id":"f1","verdict":"fine"}],"traps":[]}'), /未知 verdict/);
-});
-
-test("score counts kept facts and violated traps", () => {
-  const judge = { facts: [{ id: "f1", verdict: "kept" }, { id: "f2", verdict: "contradicted" }, { id: "f3", verdict: "missing" }],
-    traps: [{ id: "t1", violated: true }, { id: "t2", violated: false }], grade: 2 };
-  const result = score(judge, { tokens: { ok: true }, similarity: 0.9 });
-  assert.equal(result.factKept, 0.33);
-  assert.equal(result.contradicted, 1);
-  assert.equal(result.trapsViolated, 1);
-});
-
-test("similarity is 1 for the same text and low for an unrelated one", () => {
-  assert.equal(similarity("把代码落下去", "把代码落下去"), 1);
+test("similarity is 1 for unchanged text and ignores placeholders and markup", () => {
+  assert.equal(similarity("把代码落下去", "**把代码落下去**"), 1);
   assert.ok(similarity("把代码落下去", "数据库连接池被打满了") < 0.2);
+});
+
+test("the accuracy verdict must match the case, and is scored by reads and mistakes", () => {
+  const item = { meta: { checks: [{ q: "1" }, { q: "2" }], traps: ["t"] } };
+  const accuracy = parseAccuracy('```json\n{"checks":["yes","partial"],"traps":[true],"added":[{"quote":"已上线","why":"原文只说计划"},{"quote":"不存在的句子"}]}\n```', item, "改完了，已上线。");
+  assert.deepEqual(accuracy.added.map(entry => entry.quote), ["已上线"], "a quote that is not in the translation is dropped");
+  assert.equal(readRate(accuracy), 0.75);
+  assert.equal(mistakes(accuracy), 2);
+  assert.throws(() => parseAccuracy('{"checks":["yes"],"traps":[false]}', item), /checks/);
+  assert.throws(() => parseAccuracy('{"checks":["yes","fine"],"traps":[false]}', item), /checks/);
+});
+
+test("a clarity win must survive swapping the order", () => {
+  assert.equal(parseClarity('{"winner":"B","reason":"r"}').winner, "B");
+  assert.throws(() => parseClarity('{"winner":"both"}'), /A \/ B/);
+  // baseline first then candidate first: candidate is B, then A
+  assert.equal(settle({ winner: "B" }, { winner: "A" }), "win");
+  assert.equal(settle({ winner: "A" }, { winner: "B" }), "loss");
+  assert.equal(settle({ winner: "B" }, { winner: "B" }), "tie");
+  assert.equal(settle({ winner: "same" }, { winner: "A" }), "tie");
 });

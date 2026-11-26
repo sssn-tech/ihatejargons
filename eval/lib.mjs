@@ -5,28 +5,30 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const caseDirectory = fileURLToPath(new URL("./cases/", import.meta.url));
+export const words = JSON.parse(readFileSync(new URL("./words.json", import.meta.url), "utf8"));
 
-// A case is one Codex reply, with the facts, traps and jargon annotated by hand.
-// The file is markdown: a JSON comment header, then the reply body exactly as Codex wrote it.
+// A case is one Codex reply: a JSON comment header, then the reply exactly as written.
+// Header: id, type (fix | keep), kind (report | summary), question, source, checks[{q,a}], traps[] (optional).
 export function parseCase(name, source) {
   const match = /^<!--\n([\s\S]*?)\n-->\n+([\s\S]*)$/u.exec(source.trimStart());
   if (!match) throw Error(name + ": 缺少 JSON 头或正文");
   const meta = JSON.parse(match[1]);
   const body = match[2].trim();
-  for (const key of ["id", "title", "kind", "facts", "traps"]) {
+  for (const key of ["id", "type", "kind", "question", "source", "checks"]) {
     if (!(key in meta)) throw Error(name + ": 缺少字段 " + key);
   }
+  if (!["fix", "keep"].includes(meta.type)) throw Error(name + ": type 必须是 fix 或 keep");
   if (!["report", "summary"].includes(meta.kind)) throw Error(name + ": kind 必须是 report 或 summary");
-  for (const fact of meta.facts) if (!fact.id || !fact.text) throw Error(name + ": fact 缺少 id 或 text");
-  for (const trap of meta.traps) if (!trap.id || !trap.text) throw Error(name + ": trap 缺少 id 或 text");
+  if (!Array.isArray(meta.checks) || meta.checks.length < 1 || meta.checks.length > 4) throw Error(name + ": checks 需要 1–4 条");
+  for (const check of meta.checks) if (!check.q || !check.a) throw Error(name + ": check 缺少 q 或 a");
+  meta.traps = meta.traps || [];
+  if (!meta.traps.every(trap => typeof trap === "string" && trap)) throw Error(name + ": traps 必须是字符串列表");
+  if (!body) throw Error(name + ": 正文为空");
   return { file: name, meta, body };
 }
 
 export async function loadCases(directory = caseDirectory) {
-  const names = (await readdir(directory, { withFileTypes: true }))
-    .filter(entry => entry.isFile() && entry.name.endsWith(".md"))
-    .map(entry => entry.name)
-    .sort();
+  const names = (await readdir(directory)).filter(name => name.endsWith(".md")).sort();
   const cases = [];
   for (const name of names) cases.push(parseCase(name, await readFile(join(directory, name), "utf8")));
   const ids = new Set();
@@ -37,21 +39,21 @@ export async function loadCases(directory = caseDirectory) {
   return cases;
 }
 
-// Mirrors src/content.js snapshot(): every inline code element is replaced by a ⟦Tn⟧
-// placeholder, and only a narrow subset of them also gets a label for the model.
+// Mirrors src/content.js snapshot(): inline code becomes a ⟦Tn⟧ placeholder, and only
+// snake_case values and numeric ranges also get a label for the model. Chinese labels in
+// backticks (`旧版消费者 × 历史事件`) stay as text, exactly as the plugin sends them.
 const labelable = /^(?:[A-Za-z]{1,20}(?:_[A-Za-z]{1,20})+|[\d.]+%?(?:\s*[→–-]\s*[\d.]+%?)?)$/u;
-const inlineCode = /`([^`\n]+)`/gu;
+const humanLabel = /^[\p{Script=Han}A-Za-z0-9 ×→，、（）%.-]{2,96}$/u;
 
-export function snapshot(body, { labelAll = false } = {}) {
+export function snapshot(body) {
   const terms = [];
-  const text = body.replace(inlineCode, (whole, inner) => {
-    const label = inner.trim();
+  const text = body.replace(/`([^`\n]+)`/gu, (whole, inner) => {
+    if (/\p{Script=Han}/u.test(inner.trim()) && humanLabel.test(inner.trim())) return "`" + inner.trim() + "`";
     const token = "⟦T" + terms.length + "⟧";
-    terms.push({ token, label, labelled: labelAll || (label.length <= 48 && labelable.test(label)) });
+    terms.push({ token, label: inner.trim() });
     return token;
   });
-  // The plugin only sends labels for the subset above; unlabelled placeholders still exist.
-  return { text, terms, labels: terms.filter(term => term.labelled).map(({token, label}) => ({ token, label })) };
+  return { text, terms, labels: terms.filter(term => term.label.length <= 48 && labelable.test(term.label)) };
 }
 
 export function restore(text, terms) {
@@ -60,28 +62,34 @@ export function restore(text, terms) {
   return output;
 }
 
-export function tokenReport(text, terms) {
-  const counts = new Map();
-  for (const token of text.match(/⟦T\d+⟧/g) || []) counts.set(token, (counts.get(token) || 0) + 1);
-  const missing = [], duplicated = [], unknown = [];
-  for (const { token } of terms) {
-    const n = counts.get(token) || 0;
-    if (n === 0) missing.push(token);
-    else if (n > 1) duplicated.push(token);
-  }
-  const known = new Set(terms.map(term => term.token));
-  for (const token of counts.keys()) if (!known.has(token)) unknown.push(token);
-  return { ok: !missing.length && !duplicated.length && !unknown.length, missing, duplicated, unknown };
+export function tokensOk(text, terms) {
+  const found = text.match(/⟦T\d+⟧/g) || [];
+  return found.length === terms.length && terms.every(({ token }) => found.filter(t => t === token).length === 1);
 }
 
-export function normalize(text) {
-  return text
-    .replace(/⟦T\d+⟧/g, " ")
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[#*_>`|:~—–\-]/g, " ")
-    .replace(/[（(][^（）()\n]{0,40}[）)]/g, (whole) => (/[A-Za-z]/.test(whole) ? "" : whole))
-    .replace(/\s+/g, "")
-    .trim();
+// Longest words first, and each matched span is blanked so 稳稳兜住 is not also counted as 兜住.
+export function jargonIn(text, list) {
+  let rest = text.toLowerCase();
+  const found = new Set();
+  for (const word of [...list].sort((a, b) => b.length - a.length)) {
+    const needle = word.toLowerCase();
+    if (!rest.includes(needle)) continue;
+    found.add(word);
+    rest = rest.replaceAll(needle, " ");
+  }
+  return found;
+}
+
+// Hard jargon still in the translation, split into what the source already had and what the
+// translator brought in on its own.
+export function jargonDelta(source, output) {
+  const before = jargonIn(source, words.hard);
+  const after = jargonIn(output, words.hard);
+  return {
+    source: [...before],
+    kept: [...after].filter(word => before.has(word)),
+    added: [...after].filter(word => !before.has(word))
+  };
 }
 
 function bigrams(text) {
@@ -90,103 +98,83 @@ function bigrams(text) {
   return set;
 }
 
-// Sorensen-Dice over distinct character bigrams: 1 means the same wording, 0 means nothing shared.
-// Rewriting that keeps meaning but changes words scores low by design; use fact checks for meaning.
+// How much of the wording survived: 1 means unchanged, 0 means nothing shared.
 export function similarity(a, b) {
-  const left = bigrams(a), right = bigrams(b);
+  const clean = value => value.replace(/⟦T\d+⟧|[\s*#>|`_\-]/g, "");
+  const left = bigrams(clean(a)), right = bigrams(clean(b));
   if (!left.size || !right.size) return 0;
   let shared = 0;
   for (const pair of left) if (right.has(pair)) shared++;
-  return (2 * shared) / (left.size + right.size);
+  return Number(((2 * shared) / (left.size + right.size)).toFixed(2));
 }
 
-// Numbers that carry meaning. URLs, file paths, hashes and version/enum names are
-// checked by the fact list instead, so they are stripped here to keep the signal clean.
-export function numbersIn(text) {
-  const cleaned = text
-    .replace(/https?:\/\/\S+/g, " ")
-    .replace(/`[^`\n]*`/g, " ")
-    .replace(/[A-Za-z_][\w.-]*\d[\w.-]*/g, " ")
-    .replace(/[\w.-]*\/[\w./-]+/g, " ");
-  return (cleaned.match(/(?<![\w.])\d+(?:[.,]\d+)*(?:\s*%)?/g) || [])
-    .map(value => value.replace(/\s/g, ""));
-}
-
-export function deterministicChecks(item, output, terms) {
-  const source = restore(item.body, terms);
-  const translated = restore(output, terms);
-  const sourceNumbers = new Set(numbersIn(source));
-  const keptNumbers = new Set(numbersIn(translated));
-  const numbersMissing = [...sourceNumbers].filter(value => !keptNumbers.has(value));
-  const prose = translated.replace(/`[^`\n]*`|（[^（）\n]*）|\([^()\n]*\)/gu, "");
-  const jargon = item.meta.jargon || [];
-  const jargonLeft = jargon.filter(entry => entry.term.split(" / ").some(form => prose.includes(form))).map(entry => entry.term);
-  const sourceProse = normalize(source);
-  const outputProse = normalize(translated);
-  // Translating English into Chinese has no shared wording to measure; leave the ratio out.
-  const comparable = item.meta.lang !== "en";
-  return {
-    tokens: tokenReport(output, terms),
-    lengthRatio: Number((outputProse.length / Math.max(1, sourceProse.length)).toFixed(2)),
-    similarity: comparable ? Number(similarity(sourceProse, outputProse).toFixed(3)) : null,
-    numbersMissing,
-    jargonLeft,
-    tableRows: { source: countTableRows(source), output: countTableRows(translated) }
-  };
-}
-
-function countTableRows(text) {
-  return text.split("\n").filter(line => line.trim().startsWith("|")).length;
-}
-
-const verdicts = new Set(["kept", "partial", "missing", "contradicted"]);
-
-export function judgeMessages(item, output, terms) {
-  const source = restore(item.body, terms);
-  const translated = restore(output, terms);
+// One call: can a reader get each answer from the translation alone, did it fall into a known
+// trap, and does it say anything the original does not.
+export function accuracyMessages(item, source, translated) {
   const system = [
-    "你是给翻译结果打分的评审。给你一段原始汇报（source）和一段改写后的译文（translated），物品是 facts（必须保留的事实）、traps（改写时常见的错误）、jargon（需要被讲明白的行话）。",
-    "对每个 fact 判断译文单独读起来是否包含它：kept＝完整并且正确；partial＝提了但丢了关键限定、数字或说反了程度（例如把「冻结扩大」说成「缩小流量」）；missing＝没有；contradicted＝与原文相反或把示例内容写成了事实。措辞不同但意思相同算 kept。",
-    "对每个 trap 判断译文是否犯了：violated 为 true 表示犯了，note 写译文里对应的原话片段。",
-    "jargon 里列出译文仍然直接使用、没有解释的词；explained 里列出译文用大白话解释过的词。",
-    "只按 source 判断，不要用你自己的领域知识补充。译文里的数字、实体和因果关系要与 source 一致才算 kept。",
-    "只输出 JSON，不要代码围栏。格式：{\"facts\":[{\"id\":\"f1\",\"verdict\":\"kept|partial|missing|contradicted\",\"note\":\"\"}],\"traps\":[{\"id\":\"t1\",\"violated\":false,\"note\":\"\"}],\"jargonLeft\":[\"词\"],\"explained\":[\"词\"],\"grade\":1到5的整数,\"summary\":\"一句话评价\"}"
+    "你在检查一段改写是否忠实。source 是 AI 编程助手的原话，translated 是给不写代码的人看的改写。",
+    "对 checks 里每个问题：只读 translated，读者能否得出 a 给的答案？yes＝能；partial＝只能得出一部分；no＝得不出；wrong＝会得出错误或相反的结论。措辞不同但意思一致算 yes。",
+    "对 traps 里每一条：translated 是否犯了这个错？",
+    "added：列出 translated 里会误导读者的新内容（source 没有的事实、改了的数字、把计划写成已完成等），最多 3 条；换一种说法、加一句解释都不算。每条的 quote 必须逐字摘自 translated。没有就给空数组。",
+    "只按 source 判断，不要用自己的领域知识补充。只输出 JSON，不要代码围栏：",
+    '{"checks":["yes|partial|no|wrong",...],"traps":[true|false,...],"added":[{"quote":"译文原句","why":"原文怎么说"}],"note":"一句话"}'
   ].join("\n");
-  const user = JSON.stringify({
-    source,
-    translated,
-    facts: item.meta.facts,
-    traps: item.meta.traps,
-    jargon: (item.meta.jargon || []).map(entry => entry.term)
-  });
+  const user = JSON.stringify({ source, translated, checks: item.meta.checks, traps: item.meta.traps });
   return [{ role: "system", content: system }, { role: "user", content: user }];
 }
 
-function parseGrade(value) {
-  const text = String(value ?? "").trim();
-  const match = /^(\d)(?:\s*\/\s*\d+)?$/u.exec(text) || /(\d)\s*分/u.exec(text);
-  const grade = match ? Number(match[1]) : NaN;
-  if (!Number.isInteger(grade) || grade < 1 || grade > 5) throw Error("评审没有给出 1–5 的分数: " + text.slice(0, 40));
-  return grade;
+export function parseAccuracy(raw, item, translated) {
+  const parsed = parseJson(raw);
+  const verdicts = new Set(["yes", "partial", "no", "wrong"]);
+  if (!Array.isArray(parsed.checks) || parsed.checks.length !== item.meta.checks.length ||
+      !parsed.checks.every(value => verdicts.has(value))) throw Error("评审给的 checks 数量或取值不对");
+  const traps = Array.isArray(parsed.traps) ? parsed.traps.map(Boolean) : [];
+  if (traps.length !== item.meta.traps.length) throw Error("评审给的 traps 数量不对");
+  return {
+    checks: parsed.checks,
+    traps,
+    // A claim only counts when its quote is really in the translation; judges sometimes invent one.
+    added: (Array.isArray(parsed.added) ? parsed.added : [])
+      .filter(entry => entry && typeof entry.quote === "string" && entry.quote.trim() &&
+        (translated === undefined || translated.includes(entry.quote.trim())))
+      .slice(0, 3).map(entry => ({ quote: entry.quote.trim(), why: String(entry.why || "") })),
+    note: String(parsed.note || "")
+  };
 }
 
-export function parseJudge(raw) {
+// Pairwise: which of two texts lets a non-programmer understand and act. Completeness is
+// judged elsewhere, so the judge is told to ignore it.
+export function clarityMessages(question, first, second) {
+  const system = [
+    "读者知道自己让 AI 编程助手做了什么，但不写代码，也不熟悉工程行话。",
+    "A 和 B 是同一条回复的两种写法。只比较：哪一份让这位读者更容易看懂现在的状态、以及自己要不要做什么。",
+    "不要比较哪份更完整或更准确，那由别的检查负责。两份差不多就选 same。",
+    '只输出 JSON，不要代码围栏：{"winner":"A|B|same","reason":"一句话"}'
+  ].join("\n");
+  const user = JSON.stringify({ question, A: first, B: second });
+  return [{ role: "system", content: system }, { role: "user", content: user }];
+}
+
+export function parseClarity(raw) {
+  const parsed = parseJson(raw);
+  const winner = String(parsed.winner || "").trim();
+  if (!["A", "B", "same"].includes(winner)) throw Error("评审没有给出 A / B / same");
+  return { winner, reason: String(parsed.reason || "") };
+}
+
+// Ask twice with the order swapped (baseline as A, then as B); only a verdict that survives
+// the swap counts.
+export function settle(baselineFirst, candidateFirst) {
+  if (baselineFirst.winner === "B" && candidateFirst.winner === "A") return "win";
+  if (baselineFirst.winner === "A" && candidateFirst.winner === "B") return "loss";
+  return "tie";
+}
+
+function parseJson(raw) {
   const cleaned = raw.replace(/^\s*```(?:json)?\s*|```\s*$/g, "").trim();
   const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}");
   if (start < 0 || end < 0) throw Error("评审没有返回 JSON");
-  const parsed = JSON.parse(cleaned.slice(start, end + 1));
-  if (!Array.isArray(parsed.facts) || !Array.isArray(parsed.traps)) throw Error("评审 JSON 缺字段");
-  for (const fact of parsed.facts) {
-    if (!verdicts.has(fact.verdict)) throw Error("未知 verdict: " + fact.verdict);
-  }
-  return {
-    facts: parsed.facts,
-    traps: parsed.traps.map(trap => ({ ...trap, violated: Boolean(trap.violated) })),
-    jargonLeft: Array.isArray(parsed.jargonLeft) ? parsed.jargonLeft : [],
-    explained: Array.isArray(parsed.explained) ? parsed.explained : [],
-    grade: parseGrade(parsed.grade),
-    summary: String(parsed.summary || "")
-  };
+  return JSON.parse(cleaned.slice(start, end + 1));
 }
 
 // Same key file and endpoint the plugin uses, so the eval measures what ships.
@@ -201,7 +189,7 @@ export function apiKey() {
   return key;
 }
 
-export async function askModel(model, messages, { retries = 2, temperature = 0 } = {}) {
+export async function askModel(model, messages, { retries = 2 } = {}) {
   const key = apiKey();
   let last;
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -210,41 +198,38 @@ export async function askModel(model, messages, { retries = 2, temperature = 0 }
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
         signal: AbortSignal.timeout(180000),
-        body: JSON.stringify({ model, messages, stream: false, temperature, enable_thinking: false })
+        body: JSON.stringify({ model, messages, stream: false, temperature: 0, enable_thinking: false })
       });
       if (!response.ok) throw Error("HTTP " + response.status + " " + (await response.text()).slice(0, 200));
-      const body = await response.json();
-      const choice = body.choices?.[0];
+      const choice = (await response.json()).choices?.[0];
       if (choice?.finish_reason === "length") throw Error("输出被截断");
       const content = choice?.message?.content;
       if (typeof content !== "string" || !content.trim()) throw Error("空回复");
       return content.trim();
     } catch (error) {
       last = error;
-      if (attempt < retries) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+      if (attempt < retries) await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
     }
   }
   throw last;
 }
 
-export function score(judge, checks) {
-  const facts = judge.facts;
-  const kept = facts.filter(fact => fact.verdict === "kept").length;
-  const contradicted = facts.filter(fact => fact.verdict === "contradicted").length;
-  const traps = judge.traps.filter(trap => trap.violated).length;
-  return {
-    factKept: facts.length ? Number((kept / facts.length).toFixed(2)) : null,
-    contradicted,
-    trapsViolated: traps,
-    grade: judge.grade,
-    tokensOk: checks.tokens.ok,
-    similarity: checks.similarity
-  };
+// Retry once when the judge answers in the wrong shape; a second failure is reported, not hidden.
+export async function judge(model, messages, parse) {
+  let last;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try { return parse(await askModel(model, messages)); }
+    catch (error) { last = error; }
+  }
+  throw last;
 }
 
-export function worst(report) {
-  const ranked = report.filter(row => row.judge);
-  ranked.sort((a, b) => (a.score.contradicted * 3 + a.score.trapsViolated * 2 + (1 - a.score.factKept)) -
-    (b.score.contradicted * 3 + b.score.trapsViolated * 2 + (1 - b.score.factKept)));
-  return ranked;
+export function readRate(accuracy) {
+  const points = { yes: 1, partial: 0.5, no: 0, wrong: 0 };
+  return accuracy.checks.reduce((sum, verdict) => sum + points[verdict], 0) / accuracy.checks.length;
+}
+
+export function mistakes(accuracy) {
+  return accuracy.checks.filter(verdict => verdict === "wrong").length +
+    accuracy.traps.filter(Boolean).length + accuracy.added.length;
 }
