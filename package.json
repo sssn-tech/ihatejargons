@@ -1,0 +1,44 @@
+{
+  "name": "ct-codex-translator",
+  "version": "0.1.0",
+  "description": "ihatejargons · 为每段 Codex 回复提供原文注释、简明改写和面向外行的简短讲解。",
+  "type": "module",
+  "keywords": [
+    "codex-tweaks-package",
+    "codex-tweaks-node"
+  ],
+  "codexTweaks": {
+    "apiVersion": 3,
+    "entrypoints": {
+      "renderer": "src/index.js",
+      "node": "src/backend.js"
+    },
+    "priority": 100,
+    "packageDependencies": {},
+    "permissions": {
+      "node": {
+        "reason": "读取 ~/.config/minicode/siliconflow.env 中的 API 密钥。翻译把问题、前文与目标文字发送给所选服务，术语识别发送目标文字；可选本机 Ollama。词条和设置保存在本机。主动追问时将词条、本词的近期问答和新问题发送给硅基流动 DeepSeek。"
+      }
+    },
+    "ui": {
+      "settingsSections": {
+        "apiVersion": 1,
+        "required": false,
+        "items": [
+          {
+            "id": "codex-translator",
+            "title": "ihatejargons",
+            "group": "personal",
+            "icon": "personalization",
+            "after": "personalization"
+          }
+        ]
+      }
+    }
+  },
+  "displayName": "ihatejargons",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sssn-tech/ihatejargons.git"
+  }
+}
