@@ -9,6 +9,7 @@ import { registerGlossary } from "./glossary.js";
 import { openPlans } from "./chat-plans.js";
 import { readRecent } from "./recent-history.js";
 import { defaults, settingsOf } from "./preferences.js";
+import { upgradeLevels } from "./level-migration.js";
 import { builtInLevels, levelSignature } from "./levels.js";
 import { buildIdentity, digest, openCache } from "./translation-cache.js";
 export { defaults };
@@ -100,11 +101,21 @@ async function modelRequest(config,messages,signal) {
   return result.trim();
 }
 
+// Saved built-in levels the user never edited follow the current built-in prompts. The file
+// is rewritten only when the user next saves settings.
+export async function readSettings(path) {
+  try {
+    const saved = JSON.parse(await readFile(path, "utf8"));
+    return settingsOf({ ...saved, ...(saved?.levels ? { levels: upgradeLevels(saved.levels) } : {}) });
+  } catch (error) {
+    if (error.code === "ENOENT") return { ...defaults };
+    throw Error("无法读取 ihatejargons 设置。");
+  }
+}
+
 export async function activate({ rpc, packageDirectory, dataDirectory, signal }) {
   const path = join(dataDirectory, "settings.json");
-  let settings = { ...defaults };
-  try { settings = settingsOf(JSON.parse(await readFile(path, "utf8"))); }
-  catch (error) { if (error.code !== "ENOENT") throw Error("无法读取 ihatejargons 设置。"); }
+  let settings = await readSettings(path);
   const build = await buildIdentity(packageDirectory);
   const cache = await openCache(dataDirectory,build,settings.cacheMB);
   const plans=await openPlans(dataDirectory,build);
