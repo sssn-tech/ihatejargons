@@ -4,16 +4,28 @@
 
 ## 用例从哪来
 
-16 条，两类来源，每条都标了 `origin`：
+共 24 条，10 条来自本机，14 条取材于社区。每条都标了 `origin`。
 
 - **`local`（10 条）**：本机 `~/.codex/sessions` 里 gpt-6.2-astra 的真实回复，只去掉了本机路径。包括 RC-042 发布记录、插件自己的 0.3.0 汇报、IPv4 被墙排查、Clash 规则说明、KV cache issue 草稿、执行摘要、研究方案、源码分析、价格表。
-- **`web`（6 条）**：社区吐槽里被反复引用的原句和写法。比如 linux.do 上那句「按照你的要求收口 落代码 不做兼容兜底 并确保单测 冒烟通过」，kenvix 点名的坏句式模板，gizmo issue 里「真实形状钉在纸上」这种写法，以及英文的 seam / load-bearing / cutover。这些是为了让用例覆盖真实用户会遇到的写法，而不是只覆盖本机模型某一天的风格。
+- **`web`（11–16）**：社区吐槽里被反复引用的原句和写法。比如 linux.do 上那句「按照你的要求收口 落代码 不做兼容兜底 并确保单测 冒烟通过」，kenvix 点名的坏句式模板，gizmo issue 里「真实形状钉在纸上」这种写法，以及英文的 seam / load-bearing / cutover。这些是为了让用例覆盖真实用户会遇到的写法，而不是只覆盖本机模型某一天的风格。
+- **`web`（17–24）** 从八篇点名评论、吐槽或讽刺 Codex 说话方式的帖子取材。`source_url` 和 `source_excerpt` 给出原帖和短摘，`source` 标明说话者及上下文。用于评分的对话与技术细节是改编，见 `adaptation`。
 
 来源和模式分析见 [PATTERNS.md](PATTERNS.md)。
 
+| 用例与原文 | 改编场景 | 表达方式的出处 |
+|---|---|---|
+| [17 审核计划要反复转述](cases/17-web-speech-plan-tense.md) | 大模型后训练 | [社区原帖](https://linux.do/t/topic/1489462) |
+| [18 “我不猜”后面跟着一个没证实的猜想](cases/18-web-speech-root-cause-voice.md) | 模型评测 | [社区原帖](https://linux.do/t/topic/1768077) |
+| [19 “烟测过了”到底测了什么](cases/19-web-speech-smoke-scope.md) | 自动化测试 | [社区原帖](https://linux.do/t/topic/2397511) |
+| [20 “起飞”“滚下一轮”遮住了究竟收到几份结果](cases/20-web-speech-reviewer-takeoff.md) | AI 基础设施 | [社区原帖](https://linux.do/t/topic/1922404) |
+| [21 同一句“再来一刀”先指排查，后指真改代码](cases/21-web-speech-one-more-cut.md) | C++ 开发 | [社区原帖](https://linux.do/t/topic/1827029) |
+| [22 浏览器插件排查忽然切换方言和主语](cases/22-web-speech-dialect-actor.md) | 前端开发 | [社区原帖](https://linux.do/t/topic/2144374) |
+| [23 抽象的“接线”和真接上的接口](cases/23-web-speech-wire-vs-wire.md) | 前后端联调 | [社区原帖](https://linux.do/t/topic/2923124) |
+| [24 “收口落盘”落下去的究竟是什么](cases/24-web-speech-close-to-disk.md) | 后端运维 | [社区原帖](https://linux.do/t/topic/1797184) |
+
 ## 一条用例由什么组成
 
-`cases/*.md` 开头是一段 JSON 注释，正文就是 Codex 的原话，逐字保留：
+`cases/*.md` 开头是一段 JSON 注释，后面的 Markdown 是送入翻译器的正文。本机样本保留原回复；社区用例按文件中的来源说明取材和改编。
 
 ```markdown
 <!--
