@@ -4,6 +4,7 @@ import { chatSidebar, sidebarStyle, threadRow, chatKey } from "./sidebar.js";
 import { levelSignature } from "./levels.js";
 import { defaults } from "./preferences.js";
 import { mountSettings } from "./settings.js";
+import { localSettingsPage } from "./settings-page.js";
 
 import { jargonUI, jargonStyle } from "./jargon-ui.js";
 
@@ -36,16 +37,14 @@ const css = jargonStyle + sidebarStyle + `
 [data-cxt-view][hidden] {display:none !important}
 .cxt-settings {display:grid;gap:14px;padding:20px;max-width:38em}
 .ihj-rail-settings{display:grid;place-items:center;align-self:center;flex:none;width:32px;height:32px;border-radius:8px;background:transparent;color:inherit;font:600 16px/1 system-ui;cursor:pointer;-webkit-app-region:no-drag}
-.ihj-rail-settings:hover,.ihj-rail-settings:focus-visible{background:color-mix(in srgb,currentColor 12%,transparent)}
-.ihj-dialog{position:fixed;inset:0 auto 0 min(var(--ihj-rail-edge,0px),15vw);margin:0;box-sizing:border-box;width:min(450px,calc(100vw - min(var(--ihj-rail-edge,0px),15vw)));max-width:none;height:100dvh;max-height:none;overflow:auto;overscroll-behavior:contain;border:0;border-inline-end:1px solid color-mix(in srgb,currentColor 18%,transparent);box-shadow:4px 0 22px #0002;background:Canvas;color:CanvasText;color-scheme:light dark;padding:0 0 18px}
-.ihj-dialog .cxt-settings{max-width:none;min-width:0}
-.ihj-dialog :is(fieldset,select,input,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+.ihj-rail-settings[aria-current="page"],.ihj-rail-settings:hover,.ihj-rail-settings:focus-visible{background:color-mix(in srgb,currentColor 12%,transparent)}
+main:has(>.ihj-settings-page)>:not(.ihj-settings-page){display:none!important}
+.ihj-settings-page{flex:1 1 auto;min-height:0;height:100%;width:100%;overflow:auto;padding:24px clamp(12px,4vw,64px);box-sizing:border-box}
+.ihj-settings-page>.cxt-settings{margin-inline:auto;width:100%;box-sizing:border-box}
 details.nmj-library{display:block;padding:0 20px 20px}
 .nmj-library>summary{cursor:pointer;font-weight:600;padding:10px 0;border-block-start:1px solid color-mix(in srgb,currentColor 18%,transparent)}
 .nmj-library>summary small{font-weight:400;opacity:.7;margin-inline-start:8px}
 .nmj-library .ihj-library-body{display:grid;gap:8px}
-.ihj-dialog::backdrop{background:#0006}
-.ihj-dialog-close{float:right;margin:16px;cursor:pointer;padding:4px 8px;border-radius:5px}
 .ihj-controls .ihj-regen{font:inherit;color:inherit;opacity:.75;cursor:pointer}
 .cxt-settings [hidden]{display:none!important}
 .ihj-warm-levels{display:flex;gap:10px;flex-wrap:wrap}
@@ -60,18 +59,26 @@ const settleMs = {summary:350, report:1200};
 function sameProtected(a,b) {
   return a===b || (a?.nodeType===Node.TEXT_NODE && b?.nodeType===Node.TEXT_NODE && a.data===b.data);
 }
-const generated = '[data-cxt-view],[data-ihj-sidebar],.ihj-dialog';
+const generated = '[data-cxt-view],[data-ihj-sidebar],.cxt-settings';
 
 export function activate({ node, ui, onCleanup }) {
   if (!node) throw Error("ihatejargons 需要启用本地 Node 后端。");
   let config, stopped = false, busy = false, timer = 0, detecting = false;
   const records = new Map();
-  let submitted = new WeakMap(), settingsDialog, disposeDialog;
+  let submitted = new WeakMap();
   const chatKeys = new WeakMap();
   function levelFor(mode) { return config.levels.find(p=>p.id===mode); }
   function nameOf(mode) { return levelFor(mode)?.name || "原文注释"; }
+  const mountPage=container=>mountSettings(container,node);
+  const registration=ui?.settingsSections?.register({id:"codex-translator",mount:mountPage});
+  const localPage=registration?.open ? null : localSettingsPage(mountPage);
   const railButtons=new Map();
   function syncRailButtons() {
+    localPage?.sync();
+    const active=localPage ? localPage.selected() :
+      [...document.querySelectorAll("[data-codex-tweaks-settings-section-host]")].some(
+        host=>host.getAttribute("data-codex-tweaks-settings-section-host")===registration.slug && host.getClientRects().length
+      );
     for (const [rail,button] of railButtons) {
       if (!rail.isConnected) {button.remove();railButtons.delete(rail);}
     }
@@ -86,35 +93,16 @@ export function activate({ node, ui, onCleanup }) {
         button.textContent="译";
         button.title="ihatejargons 设置";
         button.setAttribute("aria-label",button.title);
-        button.setAttribute("aria-haspopup","dialog");
-        button.onclick=e=>{e.stopPropagation();showSettings(rail);};
+        button.onclick=e=>{
+          e.stopPropagation();
+          (localPage || registration).open();
+        };
         railButtons.set(rail,button);
       }
+      if (active) button.setAttribute("aria-current","page");
+      else button.removeAttribute("aria-current");
       if (button.parentElement!==group) group.append(button);
     }
-  }
-  function showSettings(rail) {
-    if (settingsDialog) return;
-    const dialog=document.createElement("dialog");
-    dialog.className="ihj-dialog";
-    dialog.style.setProperty("--ihj-rail-edge",Math.max(0,rail.getBoundingClientRect().right)+"px");
-    dialog.setAttribute("aria-label","ihatejargons 设置");
-    const close=document.createElement("button");
-    close.type="button"; close.textContent="关闭"; close.className="ihj-dialog-close";
-    close.onclick=()=>dialog.close();
-    const page=document.createElement("div"); dialog.append(close,page);
-    document.body.append(dialog);
-    const dispose=mountSettings(page,node);
-    settingsDialog=dialog;
-    disposeDialog=()=>{
-      if (settingsDialog!==dialog) return;
-      dispose(); dialog.remove(); settingsDialog=null; disposeDialog=null;
-    };
-    dialog.addEventListener("close",disposeDialog,{once:true});
-    dialog.addEventListener("click",e=>{
-      if (e.target===dialog && e.clientX>=dialog.getBoundingClientRect().right) dialog.close();
-    });
-    dialog.showModal();
   }
   const style = document.createElement("style");
   style.textContent = css;
@@ -506,15 +494,12 @@ export function activate({ node, ui, onCleanup }) {
   });
   const resumeWarm = node.on("prewarm-resume",()=>{submitted=new WeakMap();restartHistory();schedule();});
   const unsubscribe = node.on("settings-changed", apply);
-  const registration = ui?.settingsSections?.register({
-    id:"codex-translator", mount:container => mountSettings(container, node)
-  });
   void node.invoke("settings", {}).then(value => { if (!config) apply(value); });
   onCleanup(() => {
     stopped = true; historyGeneration++; clearInterval(historyTimer); clearTimeout(timer); jargon.dispose(); changes.disconnect(); events.abort();
     for (const button of railButtons.values()) button.remove();
-    railButtons.clear();
-    sidebar.dispose();deleted();renewed();cleared(); resumeWarm(); disposeDialog?.(); unsubscribe(); registration?.unregister(); style.remove();
+    railButtons.clear();localPage?.dispose();
+    sidebar.dispose();deleted();renewed();cleared(); resumeWarm(); unsubscribe(); registration?.unregister(); style.remove();
     for (const rec of records.values()) drop(rec);
 
   });

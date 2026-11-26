@@ -6,7 +6,7 @@
 
 在 Codex Tweaks 的「功能包 → 从 Git 安装」中输入本仓库地址，启用功能包并确认本版本的 Node 权限。已有安装沿用包 ID `ct-codex-translator` 和已有的模型设置。版本固定为 `0.1.0`，同版本更新可用 Git 提交号区分。
 
-点击最左侧图标栏的「译」打开左侧设置面板，或打开 Codex 的「设置 → ihatejargons」。硅基流动从 `~/.config/minicode/siliconflow.env` 读取 `SILICONFLOW_API_KEY`，使用 `https://api.siliconflow.cn/v1/chat/completions`。本机 Ollama 使用 `http://127.0.0.1:11434/v1/chat/completions`，请填写已下载的模型名。
+点击最左侧图标栏的「译」进入 ihatejargons 的独立设置页，也可从 Codex 的「设置 → ihatejargons」进入同一页。使用应用的返回导航即可回到聊天。硅基流动从 `~/.config/minicode/siliconflow.env` 读取 `SILICONFLOW_API_KEY`，使用 `https://api.siliconflow.cn/v1/chat/completions`。本机 Ollama 使用 `http://127.0.0.1:11434/v1/chat/completions`，请填写已下载的模型名。
 
 ## 阅读和自定义等级
 
