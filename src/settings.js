@@ -125,15 +125,17 @@ export function mountSettings(container, node) {
   };
   void updateMeter();
   const meterTimer=setInterval(updateMeter,4000);
-  const library = document.createElement("section");
+  const library = document.createElement("details");
   library.className = "cxt-settings nmj-library";
-  library.innerHTML = '<h3>本机全局术语库</h3><p>各聊天共用。所有阅读等级都支持点击虚线词条查看解释。移出的词以后会跳过自动收录。</p><input type="search" aria-label="查找术语" placeholder="查找术语"><p role="status"></p><div class="terms"></div>';
+  library.innerHTML = '<summary>本机全局术语库<small></small></summary><div class="ihj-library-body"><p>各聊天共用。所有阅读等级都支持点击虚线词条查看解释。移出的词以后会跳过自动收录。</p><input type="search" aria-label="查找术语" placeholder="查找术语"><p role="status"></p><div class="terms"></div></div>';
   container.append(library);
+  const count = library.querySelector("summary small");
   const search = library.querySelector("input");
   const feedback = library.querySelector('[role=status]');
   const list = library.querySelector(".terms");
   let items = [], revision = -1;
   function render() {
+    if (!library.open) {list.replaceChildren();return;}
     const filter = search.value.trim().toLowerCase();
     const visible = items.filter(e=>e.term.toLowerCase().includes(filter));
     feedback.textContent = filter ? "找到 " + visible.length + " 个词条" : "已收录 " + items.length + " 个词条";
@@ -153,11 +155,13 @@ export function mountSettings(container, node) {
     }));
   }
   function update(data) {
-    if (data.version <= revision) return;
+    if (disposed || data.version <= revision) return;
     revision = data.version;
     items = data.entries.slice().sort((a,b)=>a.term.localeCompare(b.term,"zh-CN"));
+    count.textContent=items.length+" 个词条";
     render();
   }
+  library.ontoggle=render;
   const off = node.on("glossary-changed",update);
   node.invoke("glossary",{}).then(update).catch(e=>{feedback.textContent=e.message;});
   search.oninput = render;

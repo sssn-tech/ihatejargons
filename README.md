@@ -6,7 +6,7 @@
 
 在 Codex Tweaks 的「功能包 → 从 Git 安装」中输入本仓库地址，启用功能包并确认本版本的 Node 权限。已有安装沿用包 ID `ct-codex-translator` 和已有的模型设置。版本固定为 `0.1.0`，同版本更新可用 Git 提交号区分。
 
-点击任意翻译块的「设置」，或打开 Codex 的「设置 → ihatejargons」。硅基流动从 `~/.config/minicode/siliconflow.env` 读取 `SILICONFLOW_API_KEY`，使用 `https://api.siliconflow.cn/v1/chat/completions`。本机 Ollama 使用 `http://127.0.0.1:11434/v1/chat/completions`，请填写已下载的模型名。
+点击最左侧图标栏的「译」打开左侧设置面板，或打开 Codex 的「设置 → ihatejargons」。硅基流动从 `~/.config/minicode/siliconflow.env` 读取 `SILICONFLOW_API_KEY`，使用 `https://api.siliconflow.cn/v1/chat/completions`。本机 Ollama 使用 `http://127.0.0.1:11434/v1/chat/completions`，请填写已下载的模型名。
 
 ## 阅读和自定义等级
 
@@ -44,7 +44,7 @@
 
 翻译请求带上本轮用户问题（最多 6000 字符），以及之前最近 12 条对话中合计最多 8000 字符的背景。历史预译只读本机 Codex 会话索引和会话文件，提取已结束轮次的用户文字、助手回复和公开摘要。工具输出、附件内容和内部推理不参与历史预译。本机尚未同步或没有完整轮次的聊天，可能暂时没有可预译的回复。
 
-词条自动存入插件数据目录的 `glossary.json`，同一设备上的聊天共用。原文和任意译文里的已收录词都会有淡虚线。术语识别使用当前模型，点击词条后的追问使用硅基流动 DeepSeek V4.1 Flash，发送词条及该词最近六轮问答。可以从解释窗或设置页移出术语，之后自动收录会跳过它。
+词条自动存入插件数据目录的 `glossary.json`，同一设备上的聊天共用。原文和任意译文里的已收录词都会有淡虚线。术语识别使用当前模型，点击词条后的追问使用硅基流动 DeepSeek V4.1 Flash，发送词条及该词最近六轮问答。设置中的「本机全局术语库」默认折叠，展开后可以搜索和管理词条。可以从解释窗或设置页移出术语，之后自动收录会跳过它。
 
 适配 macOS 桌面客户端 26.1120.50957 和 Codex Tweaks 3.5.12。Markdown 渲染组件的许可证随包提供。
 

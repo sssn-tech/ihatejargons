@@ -35,10 +35,18 @@ const css = jargonStyle + sidebarStyle + `
 [data-cxt-view] [hidden]{display:none!important}
 [data-cxt-view][hidden] {display:none !important}
 .cxt-settings {display:grid;gap:14px;padding:20px;max-width:38em}
-.ihj-dialog{width:min(660px,92vw);max-height:85vh;overflow:auto;border:1px solid GrayText;border-radius:12px;background:Canvas;color:CanvasText;color-scheme:light dark;padding:16px}
+.ihj-rail-settings{display:grid;place-items:center;align-self:center;flex:none;width:32px;height:32px;border-radius:8px;background:transparent;color:inherit;font:600 16px/1 system-ui;cursor:pointer;-webkit-app-region:no-drag}
+.ihj-rail-settings:hover,.ihj-rail-settings:focus-visible{background:color-mix(in srgb,currentColor 12%,transparent)}
+.ihj-dialog{position:fixed;inset:0 auto 0 min(var(--ihj-rail-edge,0px),15vw);margin:0;box-sizing:border-box;width:min(450px,calc(100vw - min(var(--ihj-rail-edge,0px),15vw)));max-width:none;height:100dvh;max-height:none;overflow:auto;overscroll-behavior:contain;border:0;border-inline-end:1px solid color-mix(in srgb,currentColor 18%,transparent);box-shadow:4px 0 22px #0002;background:Canvas;color:CanvasText;color-scheme:light dark;padding:0 0 18px}
+.ihj-dialog .cxt-settings{max-width:none;min-width:0}
+.ihj-dialog :is(fieldset,select,input,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+details.nmj-library{display:block;padding:0 20px 20px}
+.nmj-library>summary{cursor:pointer;font-weight:600;padding:10px 0;border-block-start:1px solid color-mix(in srgb,currentColor 18%,transparent)}
+.nmj-library>summary small{font-weight:400;opacity:.7;margin-inline-start:8px}
+.nmj-library .ihj-library-body{display:grid;gap:8px}
 .ihj-dialog::backdrop{background:#0006}
-.ihj-dialog-close{float:right;cursor:pointer}
-.ihj-controls :is(.ihj-regen,.ihj-settings-open){font:inherit;color:inherit;opacity:.75;cursor:pointer}
+.ihj-dialog-close{float:right;margin:16px;cursor:pointer;padding:4px 8px;border-radius:5px}
+.ihj-controls .ihj-regen{font:inherit;color:inherit;opacity:.75;cursor:pointer}
 .cxt-settings [hidden]{display:none!important}
 .ihj-warm-levels{display:flex;gap:10px;flex-wrap:wrap}
 .cxt-settings .ihj-warm-levels label{display:flex;align-items:center;gap:4px}
@@ -62,10 +70,34 @@ export function activate({ node, ui, onCleanup }) {
   const chatKeys = new WeakMap();
   function levelFor(mode) { return config.levels.find(p=>p.id===mode); }
   function nameOf(mode) { return levelFor(mode)?.name || "原文注释"; }
-  function showSettings() {
+  const railButtons=new Map();
+  function syncRailButtons() {
+    for (const [rail,button] of railButtons) {
+      if (!rail.isConnected) {button.remove();railButtons.delete(rail);}
+    }
+    for (const rail of document.querySelectorAll("nav[data-app-navigation-rail]")) {
+      const group=rail.querySelector(".vertical-scroll-fade-mask") || rail;
+      let button=railButtons.get(rail);
+      if (!button) {
+        button=document.createElement("button");
+        button.type="button";
+        button.className="ihj-rail-settings";
+        button.dataset.ihjSidebar="";
+        button.textContent="译";
+        button.title="ihatejargons 设置";
+        button.setAttribute("aria-label",button.title);
+        button.setAttribute("aria-haspopup","dialog");
+        button.onclick=e=>{e.stopPropagation();showSettings(rail);};
+        railButtons.set(rail,button);
+      }
+      if (button.parentElement!==group) group.append(button);
+    }
+  }
+  function showSettings(rail) {
     if (settingsDialog) return;
     const dialog=document.createElement("dialog");
     dialog.className="ihj-dialog";
+    dialog.style.setProperty("--ihj-rail-edge",Math.max(0,rail.getBoundingClientRect().right)+"px");
     dialog.setAttribute("aria-label","ihatejargons 设置");
     const close=document.createElement("button");
     close.type="button"; close.textContent="关闭"; close.className="ihj-dialog-close";
@@ -79,6 +111,9 @@ export function activate({ node, ui, onCleanup }) {
       dispose(); dialog.remove(); settingsDialog=null; disposeDialog=null;
     };
     dialog.addEventListener("close",disposeDialog,{once:true});
+    dialog.addEventListener("click",e=>{
+      if (e.target===dialog && e.clientX>=dialog.getBoundingClientRect().right) dialog.close();
+    });
     dialog.showModal();
   }
   const style = document.createElement("style");
@@ -204,14 +239,13 @@ export function activate({ node, ui, onCleanup }) {
     if (source.matches("td,th")) { view.colSpan = source.colSpan; view.rowSpan = source.rowSpan; }
     view.dataset.cxtView = "";
     view.setAttribute("data-markdown-copy","exclude");
-    view.innerHTML = '<div class="ihj-controls"><div class="ihj-modes" role="group" aria-label="阅读方式"></div><span class="ihj-status" role="status" aria-live="polite"></span><button type="button" class="ihj-retry" hidden>重试</button><button type="button" class="ihj-regen">重新生成</button><button type="button" class="ihj-settings-open">设置</button></div><div class="cxt-text" hidden></div>';
+    view.innerHTML = '<div class="ihj-controls"><div class="ihj-modes" role="group" aria-label="阅读方式"></div><span class="ihj-status" role="status" aria-live="polite"></span><button type="button" class="ihj-retry" hidden>重试</button><button type="button" class="ihj-regen">重新生成</button></div><div class="cxt-text" hidden></div>';
     rec.view = view;
     rec.body = view.querySelector(".cxt-text");
     rec.status = view.querySelector(".ihj-status");
     rec.retry = view.querySelector(".ihj-retry");
     rec.regen=view.querySelector(".ihj-regen");
     rec.regen.onclick=()=>regenerate(rec);
-    view.querySelector(".ihj-settings-open").onclick=showSettings;
     rec.buttons = [];
     for (const {id:mode,name:label} of [{id:"original",name:"原文注释"},...config.levels]) {
       const button = document.createElement("button");
@@ -345,6 +379,7 @@ export function activate({ node, ui, onCleanup }) {
   }
   function scan() {
     if (!config || stopped) return;
+    syncRailButtons();
     sidebar.scan();
     const jobs = readChats();
     const current = new Set(jobs.map(job=>job.sources[0]));
@@ -477,6 +512,8 @@ export function activate({ node, ui, onCleanup }) {
   void node.invoke("settings", {}).then(value => { if (!config) apply(value); });
   onCleanup(() => {
     stopped = true; historyGeneration++; clearInterval(historyTimer); clearTimeout(timer); jargon.dispose(); changes.disconnect(); events.abort();
+    for (const button of railButtons.values()) button.remove();
+    railButtons.clear();
     sidebar.dispose();deleted();renewed();cleared(); resumeWarm(); disposeDialog?.(); unsubscribe(); registration?.unregister(); style.remove();
     for (const rec of records.values()) drop(rec);
 
