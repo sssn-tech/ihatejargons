@@ -35,10 +35,12 @@ async function runCase(item, mode) {
   const source = restore(text, terms);
   const row = { id: item.meta.id, type: item.meta.type, mode, lang: item.meta.lang || "zh" };
   try {
+    const started = Date.now();
     const output = await translate(
       { mode, kind: item.meta.kind, question: item.meta.question, history: [], target: text, terms: labels },
       { provider: "siliconflow", cloudModel: pluginModel, localModel: "", levels: builtInLevels }
     );
+    row.ms = Date.now() - started;
     const translated = restore(output, terms);
     row.output = translated;
     row.tokensOk = tokensOk(output, terms);

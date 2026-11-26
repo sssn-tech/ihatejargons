@@ -1,5 +1,5 @@
 {
-  "_说明": "全局黑话词表，所有用例共用。hard 只要出现就算黑话；soft 在技术语境里常有正当用法（如「根因分析」「冒烟测试」），只统计、不进总分。来源：shuorenhua 中文短语表「工程师腔 / 庸医问诊腔 / 暴力动作腔」（MIT，见 licenses/shuorenhua-MIT.txt）、kenvix.com 与 imkero.net 的禁用词、linux.do 口癖收集帖，以及 alexisgallagher.com 的 Codex 英文词表。",
+  "_说明": "全局黑话词表，所有用例共用。hard 只要出现就算黑话；soft 在技术语境里常有正当用法（如「根因分析」「冒烟测试」），只统计、不进总分。来源：shuorenhua 中文短语表「工程师腔 / 庸医问诊腔 / 暴力动作腔」（MIT，见 licenses/shuorenhua-MIT.txt）、kenvix.com 与 imkero.net 的禁用词、linux.do 口癖收集帖，以及 alexisgallagher.com 的 Codex 英文词表。 not 里是包含硬黑话、但本身是正常说法的词组（如「冒烟测试」包含「烟测」），统计前先排除。",
   "hard": [
     "收口",
     "收窄",
@@ -95,5 +95,8 @@
     "plumbing",
     "spike",
     "honest"
+  ],
+  "not": [
+    "冒烟测试"
   ]
 }

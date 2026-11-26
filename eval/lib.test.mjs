@@ -33,12 +33,16 @@ test("snapshot labels only snake_case values and ranges, and restore puts every 
   assert.deepEqual(labels.map(item => item.label), ["PROMOTION_BLOCKED", "1% → 10%"]);
   assert.equal(restore(text, terms), "状态 PROMOTION_BLOCKED，范围 1% → 10%，节点 AWS-Tokyo，人话 `依赖三态`");
   assert.equal(tokensOk("⟦T2⟧ ⟦T0⟧ ⟦T1⟧", terms), true);
-  assert.equal(tokensOk("⟦T0⟧ ⟦T0⟧ ⟦T1⟧", terms), false);
+  assert.equal(tokensOk("⟦T0⟧ ⟦T0⟧ ⟦T1⟧ ⟦T2⟧", terms), true, "a repeated field is fine");
+  assert.equal(tokensOk("⟦T0⟧ ⟦T1⟧", terms), false);
+  assert.equal(tokensOk("⟦T0⟧ ⟦T1⟧ ⟦T2⟧ ⟦T9⟧", terms), false);
 });
 
 test("jargon is matched longest first, and the delta separates kept from introduced words", () => {
   assert.deepEqual([...jargonIn("稳稳兜住之后收口", ["兜住", "稳稳", "收口"])].sort(), ["兜住", "收口", "稳稳"]);
   assert.deepEqual([...jargonIn("砍一刀", ["一刀", "砍一刀"])], ["砍一刀"]);
+  assert.deepEqual([...jargonIn("冒烟测试通过，烟测也过了", ["烟测"])], ["烟测"], "冒烟测试 is a normal term");
+  assert.deepEqual([...jargonIn("冒烟测试通过", ["烟测"])], []);
   const delta = jargonDelta("根因坐实，落盘之后就能收口了。", "原因确认了，第一刀算是落地了，之后收口。");
   assert.deepEqual(delta.source.sort(), ["坐实", "收口"].sort());
   assert.deepEqual(delta.kept, ["收口"]);

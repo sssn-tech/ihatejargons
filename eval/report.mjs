@@ -8,6 +8,14 @@ function table(header, body) {
     ...body.map(line => "| " + line.join(" | ") + " |")].join("\n");
 }
 
+// Wall time of translate() per reply, including the placeholder repair call when it happens.
+function timing(rows) {
+  const times = rows.map(row => row.ms).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!times.length) return "—";
+  const p90 = times[Math.min(times.length - 1, Math.floor(times.length * 0.9))];
+  return (mean(times) / 1000).toFixed(1) + " 秒（P90 " + (p90 / 1000).toFixed(1) + "）";
+}
+
 function tally(results) {
   const count = name => results.filter(value => value === name).length;
   return `${count("win")} 胜 / ${count("tie")} 平 / ${count("loss")} 负`;
@@ -20,7 +28,7 @@ export function renderRun(run, cases) {
     `被测：\`${run.pluginModel}\`；评审：\`${run.judgeModel}\`；用例 ${cases.length} 条` +
       `（需要改 ${cases.filter(item => item.meta.type === "fix").length}，对照 ${cases.filter(item => item.meta.type === "keep").length}）`, "",
     "## 总览", ""];
-  const header = ["等级", "比原文好懂", "读得对", "说错", "黑话残留", "新增黑话", "对照组读得对", "对照组说错", "对照组改动"];
+  const header = ["等级", "比原文好懂", "读得对", "说错", "黑话残留", "新增黑话", "对照组读得对", "对照组说错", "对照组改动", "平均耗时"];
   const body = run.modes.map(mode => {
     const fix = run.rows.filter(row => row.mode === mode && row.type === "fix" && !row.error);
     const keep = run.rows.filter(row => row.mode === mode && row.type === "keep" && !row.error);
@@ -34,7 +42,8 @@ export function renderRun(run, cases) {
       String([...fix, ...keep].reduce((sum, row) => sum + row.jargon.added.length, 0)),
       pct(mean(judged(keep).map(row => readRate(row.accuracy)))),
       String(judged(keep).reduce((sum, row) => sum + mistakes(row.accuracy), 0)),
-      keep.length ? mean(keep.filter(row => row.similarity !== null).map(row => row.similarity)).toFixed(2) : "—"];
+      keep.length ? mean(keep.filter(row => row.similarity !== null).map(row => row.similarity)).toFixed(2) : "—",
+      timing([...fix, ...keep])];
   });
   lines.push(table(header, body), "");
   lines.push("- **比原文好懂**：评审把原文和译文前后对调各比一次，两次都选译文才算胜。英文原文的用例，译成中文天然占优。");

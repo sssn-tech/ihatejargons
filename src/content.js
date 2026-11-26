@@ -162,7 +162,8 @@ export function translatedFragment(text,nodes) {
     const pieces=[];
     for(const m of leaf.data.matchAll(tokens)) {
       const index=Number(m[1]), original=nodes[index];
-      if(!original || seen.has(index)) throw Error("译文中的占位符不匹配。");
+      // A translation may name the same field twice; each mention gets its own copy.
+      if(!original) throw Error("译文中的占位符不匹配。");
       seen.add(index);
       if (original.nodeType===Node.TEXT_NODE) {
         pieces.push(leaf.data.slice(start,m.index),original.data);

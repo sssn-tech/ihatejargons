@@ -62,14 +62,16 @@ export function restore(text, terms) {
   return output;
 }
 
+// Same rule as src/backend.js: every placeholder survives, none is invented, repeats are fine.
 export function tokensOk(text, terms) {
-  const found = text.match(/⟦T\d+⟧/g) || [];
-  return found.length === terms.length && terms.every(({ token }) => found.filter(t => t === token).length === 1);
+  const found = new Set(text.match(/⟦T\d+⟧/g) || []);
+  return found.size === terms.length && terms.every(({ token }) => found.has(token));
 }
 
 // Longest words first, and each matched span is blanked so 稳稳兜住 is not also counted as 兜住.
 export function jargonIn(text, list) {
   let rest = text.toLowerCase();
+  for (const phrase of words.not || []) rest = rest.replaceAll(phrase.toLowerCase(), " ");
   const found = new Set();
   for (const word of [...list].sort((a, b) => b.length - a.length)) {
     const needle = word.toLowerCase();

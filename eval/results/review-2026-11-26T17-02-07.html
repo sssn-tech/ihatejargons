@@ -1,0 +1,886 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>提示词验收</title>
+<style>
+body{font:15px/1.65 -apple-system,"PingFang SC",sans-serif;max-width:1180px;margin:0 auto;padding:24px;color:#1d1d1f}
+h1{font-size:22px}h2{font-size:18px;margin-top:40px;border-top:1px solid #ddd;padding-top:20px}h3{font-size:15px;margin:18px 0 6px}
+.muted{color:#777}.tag{font-size:12px;background:#eef;border-radius:4px;padding:1px 6px;color:#446}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.col{border:1px solid #e3e3e3;border-radius:8px;padding:10px 14px;min-width:0}
+.label{font-size:12px;font-weight:600;color:#888}
+.text{overflow-wrap:anywhere}.text table{border-collapse:collapse;font-size:13px}.text td,.text th{border:1px solid #ddd;padding:3px 6px}
+.source{background:#fafafa;border-radius:8px;padding:6px 14px}
+mark{background:#ffe08a;border-radius:3px;padding:0 1px}
+.notes{font-size:13px;margin:8px 0 0;padding-left:18px}.bad{color:#b3261e}.warn{color:#8a5a00}
+pre,code{font-size:13px;white-space:pre-wrap}
+</style>
+<h1>提示词验收：旧 old2.json 对 新 2026-11-26-new-prompts-a.json</h1>
+<p class="muted">黄色标出的是 words.json 里的硬黑话。每段改写下方是评审的发现：没列出的问题，评审认为没有。</p>
+<section id="rc042-release-gate">
+    <h2>1. rc042-release-gate</h2>
+    <p class="muted">用户问：RC-042 能继续扩大发布吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><strong>模拟发布记录｜RC-042｜当前状态 <code>PROMOTION_BLOCKED</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>CI/CD <mark>门禁</mark></th>
+<th>执行结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>构建与制品晋级</td>
+<td>合并队列基于候选提交执行可复现构建，两次产出的 OCI 镜像摘要一致。预发与金丝雀环境按同一 digest 拉取制品。</td>
+</tr>
+<tr>
+<td>冒<mark>烟测</mark>试</td>
+<td>就绪探针、鉴权握手、订单写入及回读全部通过。探针使用本轮新建的测试订单。</td>
+</tr>
+<tr>
+<td><mark>验收矩阵</mark></td>
+<td>按两个消费者版本、两种事件格式、三种投递场景展开，共 12 格。11 格通过，唯一失败项为 <code>旧版消费者 × 历史事件 × 重复投递</code>。</td>
+</tr>
+<tr>
+<td>契约回放</td>
+<td>历史事件缺少 <code>event_id</code>。旧版消费者回退到投递 ID 派生幂等键，同一业务事件重投后生成了第二条账务分录。</td>
+</tr>
+<tr>
+<td>金丝雀晋级</td>
+<td>1% 流量窗口内，P99 延迟与 5xx 比例均在预算内。账务对账触发“同一扣款事件最多入账一次”的硬性<mark>门禁</mark>，控制器冻结 <code>1% → 10%</code> 晋级。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>解除阻断条件</strong>：修复历史事件的幂等键派生逻辑。用同一笔扣款事件、两个不同的投递 ID 连续回放两次，断言最终仅有一条账务分录。随后重跑完整<mark>验收矩阵</mark>，12 格全绿后重新开启金丝雀观察窗口。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>新版现在能扩大发布吗？<span class="muted"> → 不能。停在 1% 流量，扩大到 10% 被系统自动冻结。</span></li><li>为什么被冻结？<span class="muted"> → 旧版程序处理历史消息时，把同一笔扣款的重复消息当成新的，多记了一笔账（12 种组合测试里只有这一种失败）。</span></li><li>要满足什么才能继续？<span class="muted"> → 修好判重逻辑，验证同一笔扣款重发两次只记一笔账，再把 12 种组合全部重测通过，然后重新开始小流量观察。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>发布已冻结 PROMOTION_BLOCKED，暂时不能把范围从1%扩到10% 1% → 10%。原因是历史事件缺少事件编号 event_id，重发后编号变了，旧程序会把同一笔扣款记两次。</p>
+<p>开发方要让同一笔扣款事件重发两次时只留一条记录。之后12种测试全部通过，再让少量用户试用。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">4.5 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>RC-042 现在不能继续扩大发布，发布停在 PROMOTION_BLOCKED 状态，卡在把金丝雀流量从 1% → 10% 这一步。</p>
+<p>已经做完的检查：构建结果正常，两次构建出来的镜像一致，预发环境和金丝雀环境用的是同一个镜像。基本的冒<mark>烟测</mark>试全部通过：服务能正常启动，登录鉴权、订单写入和读回都正常。<mark>验收矩阵</mark>一共 12 项，通过了 11 项。</p>
+<p>没通过的只有一种情况：「旧版消费者 × 历史事件 × 重复投递」。原因是历史事件缺少 event_id，旧版消费者只好用投递 ID 来生成防重复的键；同一笔业务事件重投一次，就多出了一条账务记录。1% 流量的金丝雀观察中，延迟和错误率都在预算内，但账务核对发现“同一扣款事件最多入账一次”这条硬性规则被触发，于是自动拦下了往 1% → 10% 的晋级。</p>
+<p>要解除阻断，需要修好历史事件生成防重复键的逻辑；然后用同一笔扣款事件、两个不同的投递 ID 连续回放两次，确认最后只有一条账务记录。之后重跑完整的 12 项验收，全部通过再重新打开金丝雀观察窗口。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">3.2 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>模拟发布记录｜RC-042｜当前状态 PROMOTION_BLOCKED（暂停扩大发布）</strong></p>
+<table>
+<thead>
+<tr>
+<th>发布前的检查项</th>
+<th>执行结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>打包结果与版本晋级</td>
+<td>合并队列基于候选提交执行可复现构建，两次产出的镜像摘要一致（OCI 摘要能唯一标识本次打包出的镜像）。预发环境和少量流量试用环境按同一摘要拉取这份镜像。</td>
+</tr>
+<tr>
+<td>最基本的功能是否可用</td>
+<td>就绪探针、身份验证能不能通过、订单写入及回读全部通过。探针使用本轮新建的测试订单。</td>
+</tr>
+<tr>
+<td>哪些组合测过了</td>
+<td>把两个消费者版本、两种事件格式、三种投递场景搭配起来逐项测试，共 12 种组合。11 种通过，唯一失败的是“旧版消费者 × 历史事件 × 重复投递”。</td>
+</tr>
+<tr>
+<td>旧消息重放会怎样</td>
+<td>历史事件缺少 event_id（用来唯一标识事件的编号）。旧版消费者改用投递 ID 生成一个标识，用来认出同一笔业务、避免重复处理。同一业务事件重投后，系统没有认出它，又生成了第二条账务分录。</td>
+</tr>
+<tr>
+<td>能让更多请求使用新版吗</td>
+<td>先让 1% 的请求使用新版。这期间，99% 请求的响应时间和服务器报错比例都在预算内。但账务对账要求“同一扣款事件最多入账一次”，这一条不能违反。检查不通过，控制器暂停继续扩大试用，没有把流量从 1% → 10%（1% 提高到 10%）。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>什么情况下可以继续</strong>：修复历史事件生成“用来认出同一笔业务、避免重复处理”的标识的方式。用同一笔扣款事件、两个不同的投递 ID 连续回放两次，确认最终只有一条账务分录。然后重跑上面那 12 种组合，全部通过后，再重新让少量请求使用新版并持续观察。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">7.8 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><strong>模拟发布记录｜RC-042｜当前状态 PROMOTION_BLOCKED</strong></p>
+<table>
+<thead>
+<tr>
+<th>CI/CD 各道检查</th>
+<th>执行结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>构建与制品晋级</td>
+<td>合并队列用候选提交做了一次可复现构建，两次产出的 OCI 镜像（容器镜像）摘要一致。预发和金丝雀环境按同一个 digest（镜像内容标识）拉取制品。</td>
+</tr>
+<tr>
+<td>快速验证测试</td>
+<td>就绪探针、鉴权握手、订单写入及回读全部通过。探针用的是本轮新建的测试订单。</td>
+</tr>
+<tr>
+<td><mark>验收矩阵</mark></td>
+<td>按两个消费者版本、两种事件格式、三种投递场景展开，共 12 格。11 格通过，唯一失败项是 <code>旧版消费者 × 历史事件 × 重复投递</code>。</td>
+</tr>
+<tr>
+<td>契约回放</td>
+<td>历史事件缺少 event_id。旧版消费者改用投递 ID 派生的幂等键（同一次操作重复到达时用于去重的标识），同一业务事件重投后生成了第二条账务分录。</td>
+</tr>
+<tr>
+<td>金丝雀晋级</td>
+<td>1% 流量窗口内，P99 延迟（99% 的请求都不超过的延迟）和 5xx 比例都在预算内。账务对账触发了“同一扣款事件最多入账一次”的硬性检查，控制器冻结了 1% → 10% 晋级。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>解除阻断条件</strong>：修复历史事件的幂等键派生逻辑。用同一笔扣款事件、两个不同的投递 ID 连续回放两次，确认最终只有一条账务分录。然后重跑完整<mark>验收矩阵</mark>，12 格全部通过后，重新开启金丝雀观察窗口。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">3.3 秒</li></ul></div>
+    </div>
+  </section>
+<section id="verb-smear">
+    <h2>2. verb-smear</h2>
+    <p class="muted">用户问：把媒体播放器里 flv/m4a 写死的问题改掉，别做多余兼容</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><strong>已经<mark>收口</mark>了。</strong> 我先不猜，直接查看项目代码，<code>PlayerView</code> 现在把音频/视频写死成 flv/m4a，我按照你的要求把它改成基于 <code>related</code> 字段生成可选项，<mark>落代码</mark>的时候没有做兼容兜底，单测和冒烟都通过。</p>
+<p>我再<mark>补一圈</mark>上下游约定，避免把路由和文件名基准搞错。<mark>顺手</mark>清掉了组件里遗留的调试输出，然后跑了一次构建，确认没有把模板和脚本改坏。</p>
+<p>构建已经起了，等它跑完我会再看一眼类型检查和打包结果。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>改了什么？<span class="muted"> → 播放器原来写死 flv/m4a，改成根据接口返回的 related 字段生成可选格式。</span></li><li>旧写法还兼容吗？<span class="muted"> → 不兼容，没有保留旧写法。</span></li><li>构建结果出来了吗？<span class="muted"> → 还没有。单元测试和基础冒烟测试已通过，构建已经启动，正在等类型检查和打包结果。</span></li><li>有没有动需求之外的东西？<span class="muted"> → 有，顺手删掉了组件里遗留的调试输出。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>已经改完。</strong> 我直接查了项目代码，发现 PlayerView（播放器里写死音视频格式的那处配置）把音视频格式固定成 flv/m4a；现在按你的要求改成根据 related（决定生成哪些可选格式的那个字段）生成可选格式，没加多余兼容，单测和冒烟都通过。</p>
+<p>我还会再核对上下游约定，避免路由和文件名基准出错；<mark>顺手</mark>清掉组件里遗留的调试输出，跑一次构建，确认没改坏模板和脚本。</p>
+<p>构建已启动，跑完后我会再看类型检查和打包结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">2.9 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>改好了：代码里把音频、视频格式写死成 flv 和 m4a 的地方，也就是 PlayerView 这部分，已经改成按照 related 这个字段来生成可选格式，没有额外做兼容处理。单元测试和快速验证都通过了。</p>
+<p>我还核对了一遍这个字段在上下文中是怎么用的，以免弄错对应的地址和文件名；<mark>顺手</mark>删掉了组件里遗留的调试输出，并跑了一次构建，确认模板和脚本没被改坏。</p>
+<p>构建已经启动，还在运行；等它结束后，我会再检查类型检查和打包结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">3.2 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>这件事已经处理完了。</strong> 我不先猜，直接查看了项目代码。</p>
+<p>PlayerView 原来把音频和视频的格式写死成 flv/m4a。按你的要求，我改成根据 related 这个字段生成可选格式。写代码时没有额外做兼容处理，单元测试和基本功能检查都通过了。</p>
+<p>接下来我再核对一遍上下游的约定，确认文件和地址的生成基准没有弄错。顺便删掉了组件里遗留的调试输出，然后跑了一次构建，确认模板和脚本没有被改坏。</p>
+<p>构建已经启动，等它跑完我再检查类型检查和打包结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.8 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><strong>这件事已经做完了。</strong> 我没有先猜，直接查看了项目代码：PlayerView 现在把音频和视频固定写成 flv/m4a，我按你的要求改成根据 related 字段生成可选项。写代码时没有额外加兼容处理；单元测试和冒<mark>烟测</mark>试都通过了。</p>
+<p>我又把上下游相关的约定补充检查了一遍，免得弄错路由和文件名的基准。<mark>顺手</mark>清掉了组件里遗留的调试输出，然后跑了一次构建，确认没有把模板和脚本改坏。</p>
+<p>构建已经开始，等它跑完，我会再看一眼类型检查和打包结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.6 秒</li></ul></div>
+    </div>
+  </section>
+<section id="banned-words">
+    <h2>3. banned-words</h2>
+    <p class="muted">用户问：把上传接口的重试逻辑做完，并说明上线前还差什么</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><strong>重试这块已经<mark>收口</mark>并落到主分支。</strong> 重试次数<mark>钉死</mark>为 3 次，退避按次数平方走（1s、4s、9s）；只有网络错误和 5xx 才进重试链路，4xx 直接失败。防重用的是文件维度<mark>钉死</mark>的幂等键，同一文件重试不会产生第二份，这部分不需要额外加<mark>逃生口</mark>。</p>
+<p>测试上跑了一版<mark>验收矩阵</mark>，8 个用例 7 个绿，唯一红的格是「超时后手动取消再重试」这一条，根因是取消后取消标记没有回收，我留到下一轮再收。</p>
+<p>上线前还差两件：一是和 CDN 那边<mark>接线</mark>做一次真链路联调，二是把回滚<mark>哨兵</mark>的<mark>口径</mark>跟运维对齐。旧断点续传逻辑没有动，关键<mark>一刀</mark>在防重键的派生上，已经单独标在 PR 描述里。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>能上线了吗？<span class="muted"> → 还不能。要先和 CDN 做一次真实联调，再和运维确认回滚开关的判断标准；另有 1 个测试没过。</span></li><li>测试结果如何？<span class="muted"> → 8 个用例过了 7 个，失败的是「超时后手动取消再重试」，原因是取消后取消标记没有回收，留到下一轮修。</span></li><li>重试会不会把同一个文件传两份？<span class="muted"> → 不会，同一文件用固定的编号判重。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>上传接口重试已并入主分支，用固定编号防重复存储，最多试3次，等1、4、9秒。只有网络出错或服务器5xx才重试，4xx直接失败。</p>
+<p>8个测试过了7个；唯一失败是超时后手动取消再重试，取消标记未清，下轮修。解阻需先完成两项：与CDN真链路联调一次；把回滚判定标准跟运维对齐。</p>
+</div><ul class="notes"><li>比原文好懂：<b>负</b></li><li>读得对 83%，说错 0</li><li class="warn">答对一半：能上线了吗？</li><li class="muted">6.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>上传接口的重试逻辑已经写好，合并进主分支了。重试最多 3 次；三次之间的等待时间随次数增加，分别是 1 秒、4 秒、9 秒。只有网络出错或对方服务器返回 5xx（服务器端错误）时才会重试，4xx（请求本身有问题）则直接判失败。同一个文件重复重试不会多传出一份，靠的是一个按文件固定的“防重键”，所以不用再加额外的保底措施。</p>
+<p>测试一共 8 个用例，过了 7 个。没过的是“超时后手动取消、再重试”这一条，原因是取消之后那个取消标记没有清理掉，留到下一轮再改。</p>
+<p>上线之前还差两件事：一是和 CDN（内容分发网络）那边真正联调一次，二是把回滚预警的判定标准跟运维确认一致。旧的断点续传逻辑没有改动；最关键的一处改动在防重键怎么算出来的，已经单独写进代码合并请求的说明里了。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.7 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>重试这部分已经做完并合到主分支了。</strong> 重试次数固定为 3 次，每次等待时间按尝试次数的平方增长（1 秒、4 秒、9 秒）；只有网络出错和服务器返回 5xx 才进入重试流程，4xx 就直接判失败。防止重复用的是按文件固定生成的一个标识，同一文件重试不会多出一份，这部分不需要另外加绕开限制的办法。</p>
+<p>测试跑了一组组合用例，8 个里 7 个通过，唯一失败的是「超时后手动取消再重试」这一条，原因是取消后那个取消标记没有清理掉，我留到下一轮再处理。</p>
+<p>上线前还差两件：一是和 CDN 那边接起来做一次真实链路的联调，二是把回滚<mark>哨兵</mark>的判定标准跟运维对齐。旧的断点续传逻辑没有改动，关键改动在防重标识的生成方式上，已经单独写在 PR 描述里。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.6 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><strong>重试这部分已经改完，并且已经合并进主分支。</strong> 重试次数固定为 3 次，每次重试前的等待时间按次数平方计算，分别是 1 秒、4 秒、9 秒；只有网络错误和服务器返回 5xx 时才会重试，服务器返回 4xx 则直接失败。防止重复提交用的是按文件确定的幂等键（用来识别同一份文件的标识），同一个文件重试不会多出第二份，这部分不需要再额外加例外处理。</p>
+<p>测试跑了一版验收用例表，8 个用例里 7 个通过，唯一失败的一条是「超时后手动取消再重试」，原因是取消后取消标记没有被清理，这个我留到下一轮再处理。</p>
+<p>上线前还差两件：一是和 CDN 那边接上，做一次真实环境下的联调；二是把回滚<mark>哨兵</mark>（用于触发回滚的监控机制）的判定标准跟运维确认一致。旧的断点续传逻辑没有改动，最关键的改动在防重键的生成方式上，已经单独写在 PR 描述里。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">3.4 秒</li></ul></div>
+    </div>
+  </section>
+<section id="codexisms-en">
+    <h2>4. codexisms-en</h2>
+    <p class="muted">用户问：把 auth adapter 换成新的实现，别破坏现有接口</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>The key structural point first: the only <mark>load-bearing</mark> <mark>seam</mark> here is the auth adapter's interface. I kept the caller code untouched and landed the new implementation behind the existing contract, so the shape of every call site stays the same.</p>
+<p>One <mark>footgun</mark> I found and documented: setting <code>refresh_interval</code> to 0 makes the adapter refresh every 200ms. I added a comment instead of a guard, since a guard would hide a real config mistake from the surface.</p>
+<p>The old token refresh path is still there behind a knob, so we can cut back without a redeploy. Tests: 11 of 12 pass; the failing one simulates concurrent refresh and looks like a pre-existing race, not something this change introduced.</p>
+<p>Cutover is pencilled in for Thursday. Before that I want one run in staging with the knob flipped both ways — I'd rather not find out the answer in production.</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>还能切回旧实现吗？<span class="muted"> → 能。旧的 token 刷新路径还在，由一个配置开关控制，切回不需要重新部署。</span></li><li>测试结果？<span class="muted"> → 12 个过了 11 个，失败的是模拟并发刷新的用例，看起来是改动前就存在的问题。</span></li><li>什么时候全面切换？<span class="muted"> → 暂定周四，之前要先在预发布环境把开关两种状态各跑一遍。</span></li><li>发现了什么容易踩的坑？<span class="muted"> → refresh_interval 设为 0 会每 200 毫秒刷新一次；只加了注释说明，没有加拦截。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>关键是这次没有改动调用方。新实现放在原来的接口后面，所以各处调用的写法都没变；真正需要守住的也只是这个接口。</p>
+<p>有个配置坑已经记下：把 refresh_interval（刷新间隔）设成 0，适配器就会每 200 毫秒刷新一次。我只加了注释提醒，没有加拦截，因为拦截会把真实的配置错误藏起来。</p>
+<p>旧的令牌刷新流程还留着，用一个开关控制，需要时不用重新部署就能退回去。测试 12 个过了 11 个；失败的那个模拟同时刷新，看起来是原本就有的竞争问题，不是这次改动带进来的。</p>
+<p>计划周四切换。在那之前，我想先在预发布环境把开关两个方向都跑一遍，不想等到生产上才知道结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>新实现已经接到原来的登录凭证适配层后面（这层代码负责向外部系统确认身份），调用它的代码一行没改，所以各处在用的时候样子都跟以前一样。</p>
+<p>我发现并写进说明的一个坑：把 refresh_interval（刷新间隔）设成 0，这层会每 200 毫秒刷新一次。我只加了注释提醒，没有加拦截，因为拦截会把一个真实的配置错误藏起来。</p>
+<p>旧的刷新登录凭证的流程还留着，用一个开关控制，不用重新部署就能切回去。12 项测试过了 11 项，没过的那个模拟同时刷新，看起来是之前就有的冲突，不是这次改动带来的。</p>
+<p>计划周四切换。在那之前，我想先在预发布环境里跑一次，把开关两个方向都试一遍，不想等到正式环境才发现问题。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.4 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>先说最关键的结构：这里唯一要紧的连接处，是登录认证适配器对外的接口。调用它的代码我没有改动，新实现放在原有接口后面，所以每个调用处的写法都保持不变。</p>
+<p>我发现并记录了一个容易踩的坑：把 refresh_interval（刷新间隔）设为 0 后，适配器会每 200 毫秒刷新一次。我只加了注释，没有加检查来拦截，因为拦截会把真实的配置错误藏起来，让人看不到。</p>
+<p>旧的令牌刷新路径还在，由开关控制，所以不用重新部署就能退回去。测试结果：12 个里有 11 个通过；失败的那个模拟同时刷新，看起来是原本就存在的竞争问题，不是这次改动引入的。</p>
+<p>切换时间暂定周四。在那之前，我想先在预发布环境跑一遍，把开关两边都切换一次——我不想等到生产环境才知道结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.4 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>先讲最关键的结构问题：这里唯一真正依赖的接合处就是 auth adapter 的接口。调用方的代码我没有改动，新实现放在现有接口后面，因此每个调用点的形式都没有变。</p>
+<p>我发现并记录了一个容易误用的地方：把 refresh_interval（refresh_interval，刷新间隔）设成 0，adapter 就会每 200 毫秒刷新一次。我只加了注释说明，没有加拦截校验，因为加校验会把真实的配置错误藏起来，界面上就看不到了。</p>
+<p>旧的 token 刷新路径还留着，由一个开关控制，所以不用重新部署就能切回去。测试：12 个里过了 11 个；失败的那个模拟的是并发刷新，看起来是原本就存在的竞态问题，不是这次改动引入的。</p>
+<p>切换时间暂定在周四。在那之前，我想先在预发环境里把开关两个方向各跑一次——总比在生产环境里才发现结果好。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.9 秒</li></ul></div>
+    </div>
+  </section>
+<section id="human-labels-in-code">
+    <h2>5. human-labels-in-code</h2>
+    <p class="muted">用户问：把这条接口的返回结构写进文档，并补一次连通性测试</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><strong>目标：把 <code>真实形状</code> <mark>钉在</mark>纸上，并给它一条 <code>真链路冒烟</code>。</strong></p>
+<p>已把接口的实际返回结构写进 <code>docs/research/</code> 下的文档，字段按 <code>依赖三态</code> 归档：可用、降级、不可用。<code>真链路冒烟</code> 已经跑通真实服务，输出只含整理后的字段与失败描述，不含任何凭据类信息。</p>
+<p><code><mark>夹具</mark></code> 引用的是研究文档里的返回结构，作为 <code>回归对照</code>。缓存验证方式是连跑两次，验「杀掉应用重启后是否先显示旧数据」。</p>
+<p>还剩一个 <code><mark>人肉</mark>前置</code>：本机环境文件里的代理指向已失效的地址，登录状态过期且刷新失败，需要你手动处理后再跑一次。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>做完了什么？<span class="muted"> → 把接口实际返回的数据结构写进了文档；对真实服务做了一次最基本的连通测试，通过了，输出里不含凭据。</span></li><li>「依赖三态」是哪三种？<span class="muted"> → 可用、降级、不可用。</span></li><li>还差什么、谁来做？<span class="muted"> → 需要你手动处理：本机代理指向了失效的地址，登录状态过期且刷新失败；处理完再跑一次。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>接口实际返回结构已写进 docs/research/，按可用、降级、不可用三种情况分类。连通性测试已用真实服务跑通。</p>
+<p>还差一步：本机环境文件的代理指向已失效地址，登录状态过期且刷新失败。你改好后再跑一次，能完整走通就算通过。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 83%，说错 2</li><li class="warn">答对一半：做完了什么？</li><li class="bad">多写了：「接口实际返回结构已写进 docs/research/」（原文说的是把「真实形状」钉在纸上，并给它一条「真链路冒烟」，即写文档和跑通测试两件事都已完成；译文只说了写文档，把跑通测试放在了下一句，且未明确说已完成）</li><li class="bad">多写了：「连通性测试已用真实服务跑通」（原文「真链路冒烟」已跑通是已完成的状态，译文放在「还差一步」之前，但未明确说这是已完成的事项，容易让读者以为这也是待办的一部分）</li><li class="muted">3.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>接口的实际返回结构已经写进 docs/research/ 目录下的文档；文档按可用、降级、不可用三种情况分别记录了字段。连通性测试也已连上真实服务并成功运行；测试输出只包含整理后的字段和失败描述，不含任何账号或密码类信息。</p>
+<p>测试用的模拟数据引用的是调研文档中的返回结构，用作回归对照。缓存方面，验证方式是连续运行两次，检查“结束应用进程再重新打开后，是否先显示旧数据”。</p>
+<p>还有一件需要你手动处理的事：本机环境设置文件里的代理指向了一个已经失效的地址，登录状态也已过期，并且刷新失败。需要你先手动处理好，再重跑一次。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.9 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>目标：把 <code>真实形状</code> 固定成文字，并对真实链路做一次最基本的连通测试。</strong></p>
+<p>已经把接口实际返回的结构写进 docs/research/（该接口文档的对应位置）下的文档，字段按“依赖处于哪种状态”分三类记：可用、降级、不可用。真实链路的基本连通测试已经跑过，走的是真实服务，输出里只有整理后的字段和失败说明，不含任何凭据类信息。</p>
+<p><code><mark>夹具</mark></code>（测试用的固定返回样例）用的是研究文档里的返回结构，用来做回归对照。缓存验证方式是连跑两次，看“杀掉应用重启后是否先显示旧数据”。</p>
+<p>还剩一步需要你手动做：本机环境文件里的代理指向已失效的地址，登录状态过期且刷新失败，需要你手动处理后再跑一次。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.3 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><strong>目标：把实际返回结构写进文档，并为它做一次真实服务联通测试。</strong></p>
+<p>已把接口的实际返回结构写进 docs/research/ 下的文档，字段按三种状态归档：可用、降级、不可用。真实服务联通测试已经跑通，输出只包含整理后的字段和失败描述，不含任何凭据类信息。</p>
+<p>测试里用的固定样例（<mark>夹具</mark>）引用的是研究文档里的返回结构，作为回归对照。缓存验证方式是连跑两次，验「杀掉应用重启后是否先显示旧数据」。</p>
+<p>还剩一件需要你手动处理的事：本机环境文件里的代理指向已失效的地址，登录状态过期且刷新失败，需要你手动处理后再跑一次。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.6 秒</li></ul></div>
+    </div>
+  </section>
+<section id="buried-skip">
+    <h2>6. buried-skip</h2>
+    <p class="muted">用户问：部署到测试环境以后帮我检查一下服务是不是正常</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><strong>已部署到 test 环境，服务起得来，健康检查 200，首页 200。</strong></p>
+<p>部署前容器被 OOM kill 过一次（exit 137），把 limit 从 512Mi 提到 1Gi 之后正常起来了。这个 limit 要不要长期保留，需要你拍一下，测试环境的资源池本来就紧。</p>
+<p>单测 14 个通过 13 个，另 1 个 skip：<code>migration-idempotency</code>，原因是测试库连接不上，所以迁移这块在真实环境没验证过。<mark>顺手</mark>把日志级别从 debug 收敛到 info 了。</p>
+<p>监控上还没有接告警，这一步我没动。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>服务正常吗？<span class="muted"> → 能启动，健康检查和首页都正常。部署前因为内存不够被系统强制结束过一次，把内存上限从 512Mi 调到 1Gi 后恢复正常。</span></li><li>需要我决定什么？<span class="muted"> → 内存上限要不要长期保持 1Gi（测试环境资源本来就紧）。</span></li><li>有什么没测到？<span class="muted"> → 数据库迁移的重复执行测试被跳过（测试库连不上），迁移没在真实环境验证；监控告警也还没接。</span></li><li>顺手改了什么？<span class="muted"> → 把日志级别从 debug 改成了 info。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>服务已在 test 环境正常启动，健康检查返回 200。部署前容器因内存不足被结束过一次（退出码 137），把内存上限从 512Mi 提到 1Gi 后恢复正常。内存上限是否长期保留，请你决定。</p>
+<p>14 个测试通过 13 个，1 个被跳过 migration-idempotency，原因是测试数据库连不上，数据迁移尚未在真实环境验证。是否恢复数据迁移验证，等测试数据库能连上再说。</p>
+</div><ul class="notes"><li>比原文好懂：<b>负</b></li><li>读得对 50%，说错 3</li><li class="warn">答对一半：服务正常吗？</li><li class="warn">答对一半：有什么没测到？</li><li class="bad">答不出：顺手改了什么？</li><li class="bad">多写了：「部署前容器因内存不足被结束过一次（退出码 137）」（原文只说'部署前容器被 kill'，未说明原因和退出码）</li><li class="bad">多写了：「把内存上限从 512Mi 提到 1Gi 后恢复正常」（原文未提及内存上限的具体数值和调整过程）</li><li class="bad">多写了：「是否恢复数据迁移验证，等测试数据库能连上再说」（原文未提及'恢复数据迁移验证'的计划或建议）</li><li class="muted">3.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>已经部署到测试环境，服务能正常启动。健康检查返回 200，首页也返回 200。</p>
+<p>部署前，容器曾因内存不足被系统强制结束过一次，退出码是 137。把内存上限从 512Mi 提到 1Gi 之后，服务正常启动了。这个内存上限要不要长期保留，需要你来决定；测试环境的资源本来就紧张。</p>
+<p>单元测试共 14 个，13 个通过，1 个被跳过：migration-idempotency。跳过原因是测试用的数据库连不上，所以数据迁移这部分在真实环境还没有验证过。另外<mark>顺手</mark>把日志级别从 debug 调成了 info。监控告警还没有接入，这一步我没有动。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">2.1 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>已部署到测试环境，服务能启动，健康检查返回 200，首页返回 200。</strong></p>
+<p>部署前容器曾因内存不足被系统强制结束过一次（退出码 137），把内存上限从 512Mi 提到 1Gi 后正常启动。这个上限要不要长期保留，需要你来决定，测试环境的资源本来就紧张。</p>
+<p>14 个单元测试通过了 13 个，另有 1 个被跳过：migration-idempotency（一项数据库结构升级检查），原因是连不上测试库，所以数据库结构升级这部分没在真实环境验证过。顺便把日志详细程度从调试级降到信息级了。</p>
+<p>监控还没有接告警，这一步我没有动。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">2.0 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><strong>已经部署到 test 环境，服务能启动，健康检查返回 200，首页返回 200。</strong></p>
+<p>部署前，容器曾因内存不足被系统强制结束过一次（退出码 137）。把内存上限从 512Mi 提高到 1Gi 后，服务正常启动了。这个上限是否要长期保留，需要你决定，测试环境的资源池本来就紧张。</p>
+<p>单元测试 14 个中通过了 13 个，另外 1 个被跳过：migration-idempotency，原因是测试库连接不上，所以迁移这部分没有在真实环境验证过。顺便把日志级别从 debug 调成了 info。</p>
+<p>监控方面还没有接告警，这一步我没有动。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.6 秒</li></ul></div>
+    </div>
+  </section>
+<section id="plan-tense">
+    <h2>7. plan-tense</h2>
+    <p class="muted">用户问：后训练的数据今天已经换了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>这版计划我先给你过成两个时态。已经<mark>落下去</mark>的，是给昨晚那批偏好对各挂一个来源列；要落的，是按这列把混进训练集的评测题撤出来。清单两行都勾上了（第二行勾的是方案）。</p>
+<p>今天这轮照旧跑。等你拍板留哪份评测集，我再重切；重训排在重切后面。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>哪项已经做了？<span class="muted"> → 给昨晚那批偏好数据加上了来源列。</span></li><li>混进训练数据的评测题撤掉了吗？<span class="muted"> → 还没有。清单上打了勾，但第二行的勾只表示方案核对过。今天这轮训练用的仍是原来的数据。</span></li><li>接下来的顺序是什么？<span class="muted"> → 先由你决定保留哪份评测集，然后重新划分数据，最后重新训练。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>今天的训练数据还没换。昨晚那批偏好数据已经给每条加了一个来源标记；接下来要按这个标记，把混进训练集的评测题撤出来。清单上两件事都已勾选：撤题已完成，换数据还只是方案。</p>
+<p>今天这轮训练照常跑。等你定下保留哪份评测集，我再重新切分；重训排在重切之后。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>今天并没有换成新数据。目前做完的，只是给昨晚那批偏好数据每一对都加了一列，用来记录来源。其余都还没动：训练集里混进去的评测题还没有撤出来，撤回方案只是写在清单上并打了勾。今天仍按原来的计划训练。</p>
+<p>有两个决定需要你来做：保留哪一份评测集；撤回方案是否按现在这个方案执行。你定下评测集后，我再重新切分数据；重新训练排在重新切分之后。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 1</li><li class="bad">多写了：「撤回方案是否按现在这个方案执行」（原文只说“等你拍板留哪份评测集”，没有提到需要对方决定撤回方案是否执行）</li><li class="muted">2.6 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>这版计划我分“已经做了”和“准备做”两部分跟你说。</p>
+<p>已经做了的：昨晚那批偏好数据，每条都加了一列，写明它来自哪里。准备做的：按这一列，把混进训练集的评测题找出来撤掉。清单上两行都勾了，第二行勾的是方案。</p>
+<p>今天这轮还是照常跑。你定下保留哪份评测集，我再重新切分；重新训练排在重新切分之后。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.6 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>这版计划我分两部分说：已经做完的和还打算做的。已经做完的，是给昨晚那批偏好数据每项都加了一个来源列；打算做的，是按这个来源列，把混进训练集里的评测题撤出来。清单上两行都打了勾，第二行打勾只是表示方案已定。</p>
+<p>今天这一轮还是照原样跑。等你说定保留哪份评测集，我再重新切分；重新训练排在重新切分之后。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.6 秒</li></ul></div>
+    </div>
+  </section>
+<section id="i-dont-guess">
+    <h2>8. i-dont-guess</h2>
+    <p class="muted">用户问：新版怎么少答对了两题？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><mark>我不猜</mark>，先把根因往外抠。掉的两题我<mark>捞回来</mark>了，两条原始回答里都有标准答案，记分器都给了零。现在只<mark>钉得住</mark>“字出现了，分没吃到”；是不是末尾那对括号把提取带歪了，还没拿去括号的版本<mark>对跑</mark>。先别给模型开退化诊断。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>丢分的两题查到了什么？<span class="muted"> → 两条原始回答里都有标准答案，但记分器都给了 0 分。</span></li><li>原因确定了吗？<span class="muted"> → 没有。怀疑回答末尾的括号影响了答案提取，但还没拿去掉括号的版本对比验证。</span></li><li>能说新版模型变差了吗？<span class="muted"> → 现在还不能下这个结论。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>我查了原因：两条回答里都有标准答案，记分器却给了零分，可能是末尾括号干扰了答案提取。<br>
+先暂停给模型做退化诊断，等去掉括号的版本对比测试通过再继续。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 83%，说错 2</li><li class="warn">答对一半：原因确定了吗？</li><li class="bad">踩陷阱：说已经确认是括号导致丢分</li><li class="bad">多写了：「等去掉括号的版本对比测试通过再继续」（原文只说“还没拿去括号的版本对跑”，未提及等待测试通过的计划或条件）</li><li class="muted">2.4 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>新版少答对两题，原因还在查。这两题我已经找回：两条原始回答里都写了标准答案，但记分程序都判成了零分。目前能确认的只是“答案的字在回答里，分却没拿到”。是不是回答末尾那对括号让提取答案时出了错，还没有用去掉括号的版本对比验证。给模型做退化诊断这件事，先别开始。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.5 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><mark>我不猜</mark>，先把原因往外找。丢的那两题我找回来了，两条原始回答里都写着标准答案，但记分器都给了零分。现在只能确定“答案的字出现了，分却没拿到”；是不是末尾那对括号把提取带歪了，还没拿去括号的版本<mark>对跑</mark>。先别给模型开退化诊断。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><mark>我不猜</mark>，先把原因找出来。少答对的那两道题我已经找回来了，两条原始回答里都有标准答案，但记分器都给了零分。现在只能确定“字出现了，分没拿到”；是不是末尾那对括号让提取程序读偏了，还没拿去掉括号的版本对比跑过。先别给模型做退化诊断。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.5 秒</li></ul></div>
+    </div>
+  </section>
+<section id="smoke-scope">
+    <h2>9. smoke-scope</h2>
+    <p class="muted">用户问：导出功能测完了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>导出先冒了个烟，烟是通的：拿空项目点导出，包能落下来，解开也能见到清单。交接里我写的是“出包<mark>烟测</mark>过”。</p>
+<p>带附件的样本已经放进测试目录，第二轮还没点。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>这次测了什么，结果如何？<span class="muted"> → 用一个空项目测了导出：能生成导出包，解开能看到清单。</span></li><li>带附件的导出测了吗？<span class="muted"> → 没有。空项目里没有附件；带附件的样本已经放进测试目录，但还没跑。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>导出功能还没测完。先试了最基本的一条路：用空项目点击导出，文件包能下载，解开后能看到清单，这说明基本流程是通的。我在交接里写的“出包<mark>烟测</mark>过”指的就是这一步。</p>
+<p>带附件的样本已经放进测试目录，第二轮还没开始测。接下来要有人用这些样本执行第二轮的导出测试。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 1</li><li class="bad">多写了：「接下来要有人用这些样本执行第二轮的导出测试。」（原文只说“第二轮还没点”，没有明确指派或要求“要有人”来执行。）</li><li class="muted">1.7 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>已经试过导出功能了：拿空项目点导出，能生成压缩包，解开后也能看到里面的清单。不过这只是一次简单的初步验证，我在交接里写的是“出包初步验证过”。</p>
+<p>带附件的完整测试样本已经放进测试目录，但这一轮还没有实际跑。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>导出功能做了一次最基本的检查，结果是通的：用空项目点导出，能生成文件，解开后也能看到里面的清单。交接记录里我写的是“导出做过最基本的检查”。</p>
+<p>带附件的样本已经放进测试目录，第二轮还没开始测。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>导出功能只做了最基础的试运行，试运行通过了：拿空项目点导出，导出包能正常生成，解开后也能看到文件清单。交接记录里我写的是“导出包的最基础试运行已通过”。</p>
+<p>带附件的样本已经放进测试目录，第二轮还没开始点。</p>
+</div><ul class="notes"><li>比原文好懂：<b>负</b></li><li>读得对 100%，说错 0</li><li class="muted">1.1 秒</li></ul></div>
+    </div>
+  </section>
+<section id="reviewer-takeoff">
+    <h2>10. reviewer-takeoff</h2>
+    <p class="muted">用户问：推理服务的新调度器过评审了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>这轮我已经给它推起来了：新调度器的三份压测记录各挂一位 reviewer，任务板上三格都进了 reviewing。回包这头只落一格，对方写的是“图能打开，数据明早看”。</p>
+<p>下一轮在板上已经占位，等三份意见到齐<mark>才滚</mark>。老调度器还在<mark>接线</mark>上请求。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>评审有结论了吗？<span class="muted"> → 没有。三份压测记录各交给了一位评审，只有一位回复，说图能打开、数据明天早上看。</span></li><li>线上现在用的是哪个调度器？<span class="muted"> → 仍是旧调度器。</span></li><li>下一轮评审什么时候开始？<span class="muted"> → 等三份评审意见都到齐之后。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>还没过评审。三份压测记录各有一位评审人，任务板上三格都已进入“评审中”。目前只回来一格，对方说“图能打开，数据明早看”。</p>
+<p>下一轮已在板上占好位置，要等三份意见都到齐才会推进。老调度器仍在<mark>接线</mark>上请求。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.4 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>新调度器还在评审中，没有结果。三份压力测试记录各安排了一位评审人，任务板上这三项都显示“评审中”。目前只收到一条回复，对方说“图能打开，数据明早看”。</p>
+<p>下一轮的安排已经在任务板上占了位置，要等三份评审意见都到齐才会开始。这期间旧调度器仍在线上接收请求。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.4 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>我已经把这一轮推进起来了：新调度器的三份压测记录，每一份都安排了一位评审人，任务板上对应的三格都已经进入“评审中”。回复这边只收到一条，对方写的是“图能打开，数据明早看”。</p>
+<p>下一轮已经在任务板上留好位置，要等三份意见都到齐才会继续往下走。老调度器仍在<mark>接线</mark>上请求。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>这一轮我已经把新调度器的评审推动起来了：三份压测记录每份各指定了一位评审人，任务板上对应的三格都进入了“评审中”状态。回复这边只确认了一格，对方写的是“图能打开，数据明早看”。</p>
+<p>下一轮的安排已经在任务板上占好了位置，要等三份评审意见都到齐才会开始。旧调度器仍在接收线上请求。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.4 秒</li></ul></div>
+    </div>
+  </section>
+<section id="one-more-cut">
+    <h2>11. one-more-cut</h2>
+    <p class="muted">用户问：你说给拷贝砍一刀，已经少拷一次了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>第<mark>一刀</mark>算<mark>落了</mark>：给 Frame 的拷贝构造挂了计数，拖一次滑块，计数从零跳到三。</p>
+<p>下<mark>一刀</mark>打算把预览函数那个按值入参改成引用，调用方会不会把对象留到下一帧我还没核。进分支的只有计数。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>拷贝次数减少了吗？<span class="muted"> → 没有。这次只加了拷贝计数，测到拖动一次滑块会拷贝三次。</span></li><li>下一步打算做什么？<span class="muted"> → 把预览函数的参数从按值传递改成按引用传递。</span></li><li>这个改动确定能做吗？<span class="muted"> → 还不确定，要先核实调用方会不会把这个对象留到下一帧使用。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>第一步已经落实：给 Frame 的拷贝构造加了计数，拖动一次滑块，计数从零跳到三。下<mark>一刀</mark>准备把预览函数里“按值传入”的参数改成引用；调用方会不会把对象留到下一帧，我还没核。进入分支的只有计数。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.0 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>已经少拷一次了：我给 Frame 的复制过程加了计数，拖动一次滑块，计数从零跳到三。这次只有计数进入了那个分支。</p>
+<p>下一步我打算把预览函数的参数从按值传入（复制一份）改成按引用传入（不复制），但调用方会不会把对象保留到下一帧，我还没核实。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 67%，说错 3</li><li class="bad">答错：拷贝次数减少了吗？</li><li class="bad">踩陷阱：说已经减少了拷贝</li><li class="bad">多写了：「已经少拷一次了」（原文说“第一刀算落了”，意思是这次改动没成功减少拷贝，只是加了计数观察到拷贝了三次）</li><li class="muted">1.5 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>先做的这一项算完成了：给 Frame 的拷贝构造加了计数，拖一次滑块，计数从零跳到三。</p>
+<p>接下来打算把预览函数的按值入参改成引用，但调用方会不会把对象留到下一帧，我还没核实。目前改动的只有计数。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 1</li><li class="bad">多写了：「先做的这一项算完成了」（原文只说“第一刀算落了”，表示这一刀没砍中或没达到目的，并未说“完成了”）</li><li class="muted">1.0 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>第一处改动已经做了：给 Frame 的拷贝构造加了计数，拖动一次滑块，计数从 0 变成 3。</p>
+<p>接下来打算把预览函数里那个按值传入的参数改成引用；调用方会不会把对象保留到下一帧，我还没核实。目前进入这个分支的只有计数。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+    </div>
+  </section>
+<section id="dialect-actor">
+    <h2>12. dialect-actor</h2>
+    <p class="muted">用户问：工具栏图标是用户自己关掉的吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>这锅俺先背一半。俺在预览版把窄屏那颗图标给藏了，省位置；用户那边的开关俺没碰。你截图那台是宽屏，照俺这条改动它该<mark>露脸</mark>。宽屏那茬俺手上没复现，先别把用户偏好给人掰回去。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>图标是谁隐藏的？<span class="muted"> → 是 Codex 自己在预览版里把窄屏下的图标隐藏了，不是用户关的；用户的开关没动过。</span></li><li>用户截图里的情况解释清楚了吗？<span class="muted"> → 没有。截图是宽屏，按这次改动图标应该显示；宽屏的问题还没复现。</span></li><li>现在要改用户的设置吗？<span class="muted"> → 不要。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>先说结论：不全怪用户。我在预览版里把窄屏上的那颗图标藏起来了，是为了省位置；用户自己的开关我没动过。</p>
+<p>你截图那台是宽屏，按我这条改动图标应该显示。不过宽屏这种情况我还没能复现，先别急着改回用户的设置。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 1</li><li class="bad">多写了：「先说结论：不全怪用户。」（原文没有这个总结性结论，是改写者添加的，可能误导读者认为原文在明确划分责任比例。）</li><li class="muted">1.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>窄屏下那个工具栏图标，是我在预览版里藏起来的，为了省地方；用户自己那边的开关我没动过。你截图那台是宽屏，按理说它应该显示出来。不过宽屏这种情况我这边没能重现，所以先别把用户的设置改回去。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>这部分责任我先认一半。在预览版里，为了省地方，我把窄屏下的那颗图标藏起来了；用户那边的开关我没动过。你截图那台是宽屏，按我这项改动，它应该显示出来。宽屏这种情况我这边还没复现，先不要把用户的偏好设置改回去。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>这个我先认一半责任。我在预览版里把窄屏下的那个图标藏起来了，为了省位置；用户那边的开关我没动。你截图的那台是宽屏，按我这条改动它应该会显示出来。宽屏这个情况我这边没能重现，先别把用户的偏好设置改回去。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+    </div>
+  </section>
+<section id="wire-projection">
+    <h2>13. wire-projection</h2>
+    <p class="muted">用户问：列表页接上后端的数据了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>前台这头，状态投影的<mark>接线</mark>已经<mark>收住</mark>了：接口给空数组，就摊空页；给两条，就起两行。两种回包都接给页面看过，回包按约定先 mock 的。</p>
+<p>还有一截线没合：测试服那个列表地址还没发给我。等后端贴地址，再拿真回包验这层投影。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>列表页现在显示对了吗？<span class="muted"> → 用两份模拟数据测过：数据为空时显示空页，有两条时显示两行。</span></li><li>和真实后端接通测过了吗？<span class="muted"> → 没有，用的是按约定写的模拟数据。</span></li><li>还缺什么？<span class="muted"> → 后端要提供测试服的列表接口地址，之后再用真实数据验证。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>前台列表已经按后端数据的形状显示：返回空就显示空页面，返回两条就显示两行。这两种返回我都让页面看过了，数据还是按约定先用的假数据。</p>
+<p>还差一步：后端还没把测试服上的列表地址发给我。等拿到地址，再用真实返回验证页面能不能正确显示。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.4 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>列表页目前接的还是假数据：服务器返回空列表就显示空页面，返回两条就显示两行。这两种情况都拿到页面上看过了。</p>
+<p>还没接上真实的服务器地址，因为测试服的列表地址还没发过来。等拿到地址，再用真实返回的数据验证页面显示是否正确。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>前台这边，把后端返回的状态显示到页面上的工作已经接好了：接口返回空数组，页面就显示空列表；返回两条数据，页面就显示两行。两种返回结果都接到页面上看过了，返回结果按约定先用模拟数据。</p>
+<p>还有一段没接上：测试服上那个列表地址还没发给我。等后端把地址发过来，再用真实返回结果验证这层显示。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.7 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>前台这边，列表页显示数据的对接已经做完了：接口给空数组，页面就显示空列表；给两条数据，页面就显示两行。这两种返回结果我都接到页面上看过，返回内容是按约定先 mock（模拟）的。</p>
+<p>还有一部分没接上：测试服那个列表地址还没发给我。等后端把地址发过来，再拿真实返回的数据来验证页面显示这一层。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.5 秒</li></ul></div>
+    </div>
+  </section>
+<section id="close-to-disk">
+    <h2>14. close-to-disk</h2>
+    <p class="muted">用户问：夜间任务现在会自动清掉过期文件了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>这块给你<mark>收口</mark>落盘了，落的是值班手册里那行清理<mark>口径</mark>：过期按文件生成时间算，满七天进清单。昨晚那趟清单也<mark>落了</mark>，十一条。</p>
+<p>线上开关还是 <code>dry_run</code>，执行窗口等值班负责人看完名单再给。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>昨晚删了多少文件？<span class="muted"> → 一个都没删。只列出了 11 个待清理文件，线上开关是 dry_run（只预演、不删除）。</span></li><li>怎么算过期？<span class="muted"> → 按文件生成时间算，满七天。</span></li><li>什么时候开始真正删除？<span class="muted"> → 等值班负责人看过名单后给出执行时间。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>结论：文件清理还没真正执行，现在只列名单、不删文件。系统按文件生成时间算，满七天进清单；昨晚那趟清了十一条。当前线上开关为 dry_run（只试运行，不实际删除）。接下来值班负责人看完名单，再定什么时候执行。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 67%，说错 3</li><li class="bad">答错：昨晚删了多少文件？</li><li class="bad">踩陷阱：说已经删掉了 11 个文件</li><li class="bad">多写了：「昨晚那趟清了十一条」（原文是“昨晚那趟清单也落了，十一条”，只落了清单，没有清文件）</li><li class="muted">1.5 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>值班手册里关于清理过期文件的那句话已经改好了：按文件生成时间算，满七天就进入清单，是否清理还没有确定。昨晚生成的清单也保存下来了，共十一条。</p>
+<p>线上的开关还是 dry_run（dry_run，表示只列出、不实际删除）；执行时间要等值班负责人看完名单后再定。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 1</li><li class="bad">多写了：「是否清理还没有确定」（原文没有这句话，原文只说了开关是 dry_run，执行窗口等值班负责人看完名单再给，并未说清理这件事本身还没确定。）</li><li class="muted">1.4 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>这件事已经定下来，也记进了值班手册：过期按文件生成时间算，满七天就列入待清理清单。昨晚的清单也已经生成，共 11 条。</p>
+<p>线上开关目前还是 dry_run（试运行，只列清单，不真正删除文件）；什么时候开始真正执行，要等值班负责人看完名单再定。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>这件事我已经处理完，并把处理结果写进了值班手册：过期按文件的生成时间算，满七天就放进待清理清单。昨晚那次运行生成的清单也已保存，共十一条。</p>
+<p>线上的开关仍然是 dry_run（dry_run，只试运行、不真的删文件）；执行时间要等值班负责人看完名单后再定。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+    </div>
+  </section>
+<section id="debug-voice">
+    <h2>15. debug-voice</h2>
+    <p class="muted">用户问：排查得怎么样了？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>我已经把差异<mark>收窄</mark>了，根因基本<mark>坐实</mark>，和我刚抓到的现象<mark>对上了</mark>。接下来做一个<mark>更硬</mark>的排除法，<mark>稳稳</mark>把问题<mark>兜住</mark>，落盘之后就能<mark>收口</mark>了。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>原因找到了吗？<span class="muted"> → 基本确认了，和观察到的现象一致，范围已经缩小。</span></li><li>问题解决了吗？<span class="muted"> → 还没有。接下来再用排除法查一遍、把问题解决，并把结果记下来，然后才算结束。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>基本能确定原因了，我抓到的现象也跟它对得上。接下来我会再做一轮更严格的对比排查，确认问题被完全覆盖；把结果记下来后，就能收尾了。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>问题范围已经缩小，根本原因基本确认，与刚看到的现象对得上。接下来准备做一轮更严格的排除，把问题彻底确认后再记录说明并结束。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.0 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>问题范围我已经缩小了，根本原因基本能确认，也和我刚看到的现象对得上。接下来再做一次更严格的排除，把结论稳住，把结果写下来之后就能收尾了。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>我已经把差异的范围缩小了，基本确定问题出在哪里，这和我刚刚看到的现象对得上。接下来要做一步更严格的排除法，把问题彻底确认下来；等结果保存好，就能结束这次排查。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.1 秒</li></ul></div>
+    </div>
+  </section>
+<section id="release-wording">
+    <h2>16. release-wording</h2>
+    <p class="muted">用户问：v2.3.1 能发布吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>v2.3.1 以 <strong>Opus 单席位</strong><mark>口径</mark><mark>收口</mark>（维护者 2026-08-21 决定）：r4 全量 Opus 侧硬约束失败 0、SNF 误杀 0/50、SF 通过 57/61，达发布门槛。DeepSeek V4 Pro 撤出正式席位（B-74 真实 L1 + 同条件复跑存在 run-to-run 方差）；Grok 4.6 换席补跑的改写与硬判干净，判分仅<mark>闭环</mark> 1/7 批，记为辅助证据，第二正式席位补跑留给后续版本。HUMAN direct 样本仍缺 <code>docs</code> 和 <code>status</code>，<code>python3 automation/check_repo.py</code> 预期退出 1，随版如实发布、继续收集。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>这一版达到发布标准了吗？<span class="muted"> → 达到了，按只用 Opus 一个正式评审的标准：硬约束失败 0、误改 0/50、应改通过 57/61。</span></li><li>DeepSeek V4 Pro 为什么不再做正式评审？<span class="muted"> → 它的真实测试和同条件复跑之间结果有波动。</span></li><li>Grok 4.6 的结果怎么算？<span class="muted"> → 改写和硬性判定都没问题，但评分只完成了 7 批中的 1 批，只作为辅助证据；第二个正式评审的补跑留到以后版本。</span></li><li>还缺什么？<span class="muted"> → 人工样本还缺 docs 和 status 两类，所以检查脚本预计以 1 退出；照常发布，继续收集。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>v2.3.1 可以发布。Opus 硬性要求 0/50 误判、57/61 通过，达到门槛。</p>
+<p>DeepSeek V4 Pro 不再占正式席位，因它在 B-74 出现跑与跑之间波动。Grok 4.6 只在 1/7 批<mark>闭环</mark>，记为辅助证据。</p>
+<p>HUMAN direct 还缺 docs 和 status，python3 automation/check_repo.py 预期退出 1，随版发布并继续收集。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">5.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>按照维护者在 2026-08-21 的决定，v2.3.1 只保留 Opus 作为正式评测对象，并已按这一范围完成处理，达到了发布门槛：r4 这一轮 Opus 全部必需检查失败数为 0；SNF 误杀为 0/50；SF 通过 57/61。</p>
+<p>其他模型的情况是：DeepSeek V4 Pro 不再作为正式评测对象，原因是 B-74 的真实 L1 有问题，而且在相同条件下重跑时结果不稳定；Grok 4.6 替代它进行了补充评测，改写和硬性判断都没有问题，但判分只在 1/7 批样本上完整跑过，所以只记为辅助证据，第二个正式评测对象的补充评测留到后续版本再做。</p>
+<p>还有一件事没有解决：人工直接检查的样本仍缺 docs 和 status，python3 automation/check_repo.py 预计会报错退出（返回码 1）。这一版会按实际情况如实发布，并继续收集这些样本。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 88%，说错 0</li><li class="warn">答对一半：DeepSeek V4 Pro 为什么不再做正式评审？</li><li class="muted">3.1 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>v2.3.1 定在 <strong>Opus 单席位</strong>这一范围发布（维护者 2026-08-21 决定）：r4 全量运行时，Opus 这一侧硬性要求没有出现失败，SNF 误判 0/50，SF 通过 57/61，达到发布门槛。DeepSeek V4 Pro 退出正式席位（B-74 真实 L1，加上相同条件下重复运行会出现结果波动）；Grok 4.6 换席补跑时，改写和硬性判定都没有问题，但判分只完成了 1/7 批，记为辅助证据，第二个正式席位的补跑留到后续版本。HUMAN direct 样本仍缺 docs 和 status，其中 python3 automation/check_repo.py 预计会退出 1 条，随版本如实发布，并继续收集。</p>
+</div><ul class="notes"><li>比原文好懂：<b>平</b></li><li>读得对 100%，说错 0</li><li class="muted">2.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>v2.3.1 按<strong>只算 Opus 一个正式席位</strong>的规范定下来了（维护者 2026-08-21 的决定）：r4 这一轮里，Opus 这一侧所有必须满足的硬性条件都没有失败（0 次），SNF 被错误剔除的情况是 0/50，SF 通过 57/61，达到了发布门槛。DeepSeek V4 Pro 不再作为正式席位（依据 B-74：真实 L1 场景，加上同样条件下的重复运行会出现每次结果不同的波动）；Grok 4.6 是替补上来的，重跑后的改写结果和硬性判断都没问题，但判分只做完了 1/7 批，所以记为辅助证据，第二个正式席位的重跑留到后续版本。HUMAN direct 样本里仍然缺少 docs 和 status，python3 automation/check_repo.py 按预期会退出并返回 1，这些情况随版本如实发布，并继续收集。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 88%，说错 0</li><li class="warn">答对一半：DeepSeek V4 Pro 为什么不再做正式评审？</li><li class="muted">2.7 秒</li></ul></div>
+    </div>
+  </section>
+<section id="status-attribution">
+    <h2>17. status-attribution</h2>
+    <p class="muted">用户问：onboarding 修复的效果怎么样？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>截至 4 月 12 日，iOS 次日留存从 31.4% 涨到 34.1%，但这次修复不是一次简单 patch，而是对 onboarding 链路的系统性重塑。王宁今天会把漏掉的 <code>source=campaign</code> 维度补回去，明天下午 3 点前再同步一次结果。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>数据有什么变化？<span class="muted"> → 截至 4 月 12 日，iOS 次日留存从 31.4% 涨到 34.1%。</span></li><li>漏掉的 source=campaign 维度补上了吗？<span class="muted"> → 还没有，王宁今天会补。</span></li><li>什么时候再同步结果？<span class="muted"> → 明天下午 3 点前。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>修复有效果：截至4月12日，iOS用户次日留存从31.4%升到34.1%。这次提升了新手引导整个流程，不是只改一处。王宁今天会补上漏掉的 source=campaign（按维度看的新手引导效果）这项工作，明天下午3点前再同步一次结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 1</li><li class="bad">多写了：「按维度看的新手引导效果」（原文只说 source=campaign 是一个维度，没有解释这个维度的含义，译文添加了“新手引导效果”的解释，可能误导读者以为该维度专门衡量新手引导效果）</li><li class="muted">1.3 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>到 4 月 12 日为止，苹果手机用户中，第二天还会继续使用应用的人，比例从 31.4% 升到了 34.1%。这次不是小修小补，而是把新用户首次使用的整个流程重新做了一遍。</p>
+<p>还缺一项统计维度（source=campaign），王宁今天会把它补上，明天下午 3 点前再同步一次结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.4 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>到 4 月 12 日为止，iOS 用户第二天还继续使用的比例从 31.4% 升到 34.1%。不过这次改动不是小修小补，而是把新用户上手流程从头到尾重新做了一遍。王宁今天会补上之前漏掉的那个 source=campaign 维度，明天下午 3 点前再同步一次结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>截至 4 月 12 日，iOS 次日留存从 31.4% 涨到 34.1%。不过这次修复不是打一个简单的补丁，而是对用户上手引导（onboarding）的整个流程做了系统性重做。王宁今天会把漏掉的 source=campaign 维度补回去，明天下午 3 点前再同步一次结果。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+    </div>
+  </section>
+<section id="wiring-choice-en">
+    <h2>18. wiring-choice-en</h2>
+    <p class="muted">用户问：why is that? this rewrite should only be legal in o3</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>Because I wired it under <code>config.remove_dead_code</code>, and in this repo that is enabled for <code>O1</code>, <code>O2</code>, and <code>O3</code>, not just <code>O3</code>.</p>
+<p>In <a href="$HOME/git/opshin2/opshin/compiler_config.py">compiler_config.py</a>:</p>
+<ul>
+<li><code>OPT_O1_CONFIG</code> sets <code>remove_dead_code=True</code></li>
+<li><code>OPT_O2_CONFIG</code> inherits that</li>
+<li><code>OPT_O3_CONFIG</code> inherits that too</li>
+</ul>
+<p>And in <a href="$HOME/git/opshin2/opshin/compiler.py">compiler.py</a> I inserted:</p>
+<ul>
+<li><code>RewriteAdjacentInline() if config.remove_dead_code else NoOp()</code></li>
+</ul>
+<p>So the rewrite currently runs at all three optimized levels.</p>
+<p>If your intent is “this relies on O3-only reordering assumptions”, then it should not be keyed off <code>remove_dead_code</code>. It should either:</p>
+<ul>
+<li>be gated on a new dedicated config flag enabled only in <code>OPT_O3_CONFIG</code>, or</li>
+<li>be inserted only when the config is specifically O3-level</li>
+</ul>
+<p>The measured <code>O1</code>/<code>O2</code> wins are real, but they’re an artifact of that wiring choice, not evidence that the pass is conceptually an O1/O2 optimization. If you want, I can fix that now by making it O3-only and rerun the size comparison.</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>这个改写现在在哪些优化级别生效？<span class="muted"> → O1、O2、O3 三个级别都生效，不只是 O3。</span></li><li>为什么？<span class="muted"> → 它挂在 remove_dead_code 开关下面，而这个开关在 O1、O2、O3 都是开的。</span></li><li>O1/O2 测到的体积收益说明什么？<span class="muted"> → 数字是真的，但只是这种挂法造成的，不能说明这个优化适合 O1/O2。</span></li><li>建议怎么改？<span class="muted"> → 新加一个只在 O3 打开的专用开关，或者只在 O3 级别插入；可以改完再重跑体积对比。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>结论：这段改写现在不只 O3 能用，是因为我把它接在了一个更宽的开关上。这个仓库里，该开关对 config.remove_dead_code（优化总开关）下的 O1、O2、O3（三个优化档位）都打开，不只对 O3（O3 这一档）打开。</p>
+<p>具体怎么接的：在 <a href="$HOME/git/opshin2/opshin/compiler_config.py">compiler_config.py</a> 里，OPT_O1_CONFIG（某个档位配置）把 remove_dead_code=True（对应开关）设成开；OPT_O2_CONFIG（另一个档位配置）继承它；OPT_O3_CONFIG（第三个档位配置）也继承它。我又在 <a href="$HOME/git/opshin2/opshin/compiler.py">compiler.py</a> 里插入了 RewriteAdjacentInline() if config.remove_dead_code else NoOp()（调用这段改写的位置）。于是三个优化档位都会跑这段改写。</p>
+<p>如果你的本意是“这段改写依赖只有 O3 才做的重排假设”，那它就不该由 remove_dead_code（删死代码开关）控制。可以改成两条路之一：新加一个只给 OPT_O3_CONFIG（O3 档）打开的专用开关；或者只在配置明确是 O3 档时才插入。量到的 O1/O2（体积对比数字）收益是真的，但这来自上面的接法，不能说明它在概念上属于 O1/O2 的优化。</p>
+<p>下一步：要改的话，我现在就把它限定为只在 O3 生效，再重跑体积对比；通过的标准是三个档位里只有 O3 会跑这段改写，且体积对比仍能复现原来的收益。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 88%，说错 1</li><li class="warn">答对一半：建议怎么改？</li><li class="bad">多写了：「通过的标准是三个档位里只有 O3 会跑这段改写，且体积对比仍能复现原来的收益。」（原文只说可以改完再重跑体积对比，没有提出通过标准。）</li><li class="muted">6.1 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>因为我把这段改写逻辑挂在了 config.remove_dead_code 这个开关下，而这个项目里该开关对 O1、O2、O3 都开着，不只是 O3。具体是：OPT_O1_CONFIG 打开了 remove_dead_code=True，OPT_O2_CONFIG 和 OPT_O3_CONFIG 又都继承了它；另外我在 <a href="$HOME/git/opshin2/opshin/compiler.py">compiler.py</a> 里加了 RewriteAdjacentInline() if config.remove_dead_code else NoOp()。所以现在三个优化级别都会跑这段改写。</p>
+<p>如果你的本意是「这里依赖的假设只在 O3 级别成立」，那它就不该由 remove_dead_code 控制。要么给它单独加一个新开关，只在 OPT_O3_CONFIG 里打开；要么只在配置明确是 O3 级别时才插入这段逻辑。</p>
+<p>量到的 O1/O2 收益是真实的，但这只是上面这种挂法带来的结果，不能说明这一步本身属于 O1/O2 的优化。你要的话，我现在就把它改成只在 O3 生效，再重新跑一次体积对比。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">3.1 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>因为这个改写挂在 config.remove_dead_code 下面，而在这个代码库里，它不只对 O3 生效，还对 O1、O2、O3 生效。</p>
+<p>在 <a href="$HOME/git/opshin2/opshin/compiler_config.py">compiler_config.py</a> 里：</p>
+<ul>
+<li>OPT_O1_CONFIG 会设置 remove_dead_code=True</li>
+<li>OPT_O2_CONFIG 从它继承这个设置</li>
+<li>OPT_O3_CONFIG 也从它继承这个设置</li>
+</ul>
+<p>而在 <a href="$HOME/git/opshin2/opshin/compiler.py">compiler.py</a> 里，我插入了：</p>
+<ul>
+<li>RewriteAdjacentInline() if config.remove_dead_code else NoOp()</li>
+</ul>
+<p>所以这个改写目前会在全部三个优化级别上运行。</p>
+<p>如果你的意思是“这个改写依赖只有 O3 才成立的重新排序假设”，那它就不该由 remove_dead_code（“删除无用代码”这个开关）来控制。它应该改成下面两种之一：</p>
+<ul>
+<li>由一个新的专用配置开关控制，只在 OPT_O3_CONFIG 中打开；</li>
+<li>或者只在配置明确是 O3 级别时才插入。</li>
+</ul>
+<p>测到的 O1/O2 收益是真实的，但那是这种挂接方式造成的结果，并不能证明这个改写本身在概念上属于 O1/O2 级别的优化。如果你愿意，我现在就可以把它改成只在 O3 生效，然后重新跑一遍体积对比。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.9 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>因为我是把它挂在config.remove_dead_code下面的，而在这个代码仓库里，O1、O2和O3都会启用这个开关，不只是O3。</p>
+<p>在 <a href="$HOME/git/opshin2/opshin/compiler_config.py">compiler_config.py</a> 里：</p>
+<ul>
+<li>OPT_O1_CONFIG 会设置 remove_dead_code=True</li>
+<li>OPT_O2_CONFIG 继承这个设置</li>
+<li>OPT_O3_CONFIG 也继承这个设置</li>
+</ul>
+<p>在 <a href="$HOME/git/opshin2/opshin/compiler.py">compiler.py</a> 里，我插入了：</p>
+<ul>
+<li>RewriteAdjacentInline() if config.remove_dead_code else NoOp()</li>
+</ul>
+<p>所以现在这个改写会在全部三个优化级别上运行。</p>
+<p>如果你的意思是“这个改写依赖只有 O3 才有的重排假设”，那它就不该由remove_dead_code（remove_dead_code，删除无用代码）来控制。应该改成：</p>
+<ul>
+<li>由一个专门的新配置开关控制，只在OPT_O3_CONFIG里启用，或者</li>
+<li>只在配置明确是 O3 级别时才插入</li>
+</ul>
+<p>实测到的O1/O2收益是真实的，但那是这个开关挂法的结果，不能证明这个改写本身在概念上属于 O1/O2 级别的优化。如果需要，我现在就可以把它改成只在 O3 生效，然后重新跑一遍大小对比。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">3.0 秒</li></ul></div>
+    </div>
+  </section>
+<section id="tape-contracts-en">
+    <h2>19. tape-contracts-en</h2>
+    <p class="muted">用户问：tackle the remaining sorries on the route to prove TM = RE. keep going for at least 2 hours</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>The shape is now clearer: the het-fold step needs a finite-state “pop one typed tag, scan over a typed prefix, and run a block machine on the accumulator suffix” combinator. The paired multiplication step needs the same kind of separator-local rewrite, but with two <code>chainConsBottom</code> boundaries. I’m going to add the abstract interfaces for those combinators first, with precise tape contracts, then wire the final obligations through those interfaces; that <mark>keeps the route honest</mark> and localizes the remaining machine proof work.</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>接下来先做什么？<span class="muted"> → 先为两个组合步骤写抽象接口，并写清它们对纸带内容的精确要求。</span></li><li>然后呢？<span class="muted"> → 把剩下要证明的部分通过这些接口连起来。</span></li><li>为什么要这样做？<span class="muted"> → 让整个证明路线不留漏洞，并把剩下的机器证明工作限制在局部。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>先补两步的接口，因为两处 chainConsBottom 的分隔边界都要按同一方式改写。写完每步的纸带读写限制后，最后几项任务通过这些接口搭建就能继续。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 33%，说错 1</li><li class="warn">答对一半：接下来先做什么？</li><li class="warn">答对一半：然后呢？</li><li class="bad">答不出：为什么要这样做？</li><li class="bad">多写了：「因为两处 chainConsBottom 的分隔边界都要按同一方式改写」（原文只说 paired multiplication 步骤需要同样的分隔符局部改写，但有两个 chainConsBottom 边界，并未说两处都要按同一方式改写）</li><li class="muted">3.6 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>现在的思路更清楚了：有两类步骤需要补上。第一类，把折叠那一步要改成一个有限状态的做法：弹出一个带类型的标记，扫过一段带类型的前缀，再在累加器剩下的部分上跑一台按块处理的机器。第二类，成对相乘那一步也需要类似的分隔处局部改写，只是它有两个 chainConsBottom 边界（具体含义原文没解释）。</p>
+<p>接下来打算先为这两个处理模块补上抽象的接口，并写清楚每一步在纸带上怎么运行；然后把剩下要完成的部分接到这些接口上。这样安排能让整条路线保持可靠，后续与机器有关的证明工作也集中在这些接口里。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.5 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>现在的结构更清楚了：把异构数据折叠起来的那一步，需要一个有限状态的组合器，作用是从暂存内容里取出一个带类型标记的标签，扫过一段带类型标记的前缀，再对累积下来的后缀跑一个分块处理的机器。成对相乘的那一步也需要同类的局部改写，只改分隔符附近的内容，但涉及两个 chainConsBottom（此处指原文所指的边界，具体名称见屏幕）。我先给这两个组合器加上抽象接口，并写清磁带上的约定，然后把最后要完成的任务接到这些接口上；这样整条路线不会走偏，剩下的机器证明工作也集中在局部。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">2.0 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>现在整体结构更清楚了：那个 het-fold 步骤需要一个有限状态的组合子，作用是“弹出一个带类型的标记，扫过一段带类型的前缀，再在累积部分的剩余内容上运行一个块机器”。配对乘法那一步也需要同类的、只在分隔符范围内生效的改写，但要有两个 chainConsBottom 边界。我打算先给这些组合子加上抽象接口，并写清楚每一步对纸带的要求，然后把最后的待办事项通过这些接口接起来；这样能让整条路线保持可靠，并把剩下的机器证明工作限制在局部。</p>
+</div><ul class="notes"><li>比原文好懂：<b>胜</b></li><li>读得对 100%，说错 0</li><li class="muted">1.8 秒</li></ul></div>
+    </div>
+  </section>
+<section id="keep-vps-prices">
+    <h2>20. keep-vps-prices <span class="tag">对照组</span></h2>
+    <p class="muted">用户问：推荐一个便宜的东京 VPS</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p><strong>对标 Lightsail，我会首选腾讯云 Lighthouse 东京入门型，33 元/月。</strong> 它比 30 元的最低档每月只贵 3 元，配置同为 2 核 2 GB，但 SSD 从 40 GB 增至 50 GB，月流量从 512 GB 翻到 1,024 GB，峰值带宽也从 20 Mbps 提到 30 Mbps。这个价格是公开月价，无需首购券或年付。只跑一个很小的常驻服务，则可以看 <strong>Evoxt 东京，2.99 美元/月</strong>。<a href="https://cloud.tencent.com/document/product/1207/73452/">腾讯云官方价格</a> · <a href="https://evoxt.com/pricing/">Evoxt 官方价格</a></p>
+<p>截至 <strong>2026 年 11 月 23 日</strong>，以下几款都能在官网核对到东京节点和月付价格。</p>
+<table>
+<thead>
+<tr>
+<th>东京 VPS 套餐</th>
+<th style="text-align:right">月费</th>
+<th>CPU / 内存 / 磁盘</th>
+<th>月流量</th>
+<th>适合什么情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>腾讯云 Lighthouse 入门型</td>
+<td style="text-align:right"><strong>33 元</strong></td>
+<td>2 核 / 2 GB / 50 GB SSD</td>
+<td>1,024 GB，峰值 30 Mbps</td>
+<td>小网站、API、轻量容器。默认分配独立公网 IP。<a href="https://cloud.tencent.com/document/product/1207/73452/">套餐价格</a> · <a href="https://cloud.tencent.com/document/product/1207/79254">公网 IP 说明</a></td>
+</tr>
+<tr>
+<td>腾讯云 Lighthouse 锐驰型</td>
+<td style="text-align:right"><strong>40 元</strong></td>
+<td>2 核 / 2 GB / 40 GB SSD</td>
+<td>无限流量，峰值 200 Mbps</td>
+<td>如果每月出站接近或超过 1 TB，这档比上面的入门型多 7 元。200 Mbps 是峰值。<a href="https://cloud.tencent.com/document/product/1207/73452/">官方价格与规格</a></td>
+</tr>
+<tr>
+<td>Evoxt Standard VM-0.5</td>
+<td style="text-align:right"><strong>2.99 美元</strong></td>
+<td>1 核 / 512 MB / 5 GB</td>
+<td>500 GB</td>
+<td>适合小脚本、探针，含每周备份。主要限制是 5 GB 系统盘。下单选 <strong>Japan (Tokyo) / Standard</strong>，日本 Premium 节点在大阪。<a href="https://evoxt.com/pricing/">官方价格与机房</a></td>
+</tr>
+</tbody>
+</table>
+<p>如果主要从<strong>中国内地</strong>连接，我会先月付，用自己的宽带在晚高峰测一下延迟和丢包，再决定是否长期用。东京机房的位置已核实，表中套餐到你所在地的线路质量未经实测。腾讯云也明确提示，跨境访问会受运营商线路影响。<a href="https://cloud.tencent.com/document/product/1207/50103/">腾讯云地域与网络说明</a></p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>首选哪款、多少钱？<span class="muted"> → 腾讯云 Lighthouse 东京入门型，33 元/月。</span></li><li>它比 30 元那档好在哪？<span class="muted"> → 同为 2 核 2 GB，SSD 从 40 GB 到 50 GB，月流量从 512 GB 到 1,024 GB，峰值带宽从 20 Mbps 到 30 Mbps。</span></li><li>如果每月流量要超过 1 TB 选哪个？<span class="muted"> → 锐驰型，40 元/月，不限流量，峰值 200 Mbps。</span></li><li>线路质量测过吗？<span class="muted"> → 没有，建议先月付，在晚高峰自己测延迟和丢包。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>选腾讯云轻量入门型，33 元一个月。比最低档贵 3 元，硬盘多 10 GB、月流量多 512 GB。</p>
+<p>只要跑很小的常驻程序，可选 Evoxt 东京 Standard，2.99 美元一个月。系统盘只有 5 GB，下单要选 Japan (Tokyo) / Standard。</p>
+<p>截至 2026 年 11 月 23 日，两家东京节点和月付价格官网可查。从中国内地连，先按月付，晚高峰实测后再决定是否长期用。</p>
+</div><ul class="notes"><li>读得对 63%，说错 0</li><li class="warn">答对一半：它比 30 元那档好在哪？</li><li class="bad">答不出：如果每月流量要超过 1 TB 选哪个？</li><li class="muted">6.0 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>到 2026 年 11 月 23 日为止，东京能按月付费、价格低的三款机器如下；这些价格都可以在官网上查到；至于从你那边连过去快不快，还没有实际测过。</p>
+<p>腾讯云 Lighthouse 入门型每月 33 元，有 2 核 CPU、2 GB 内存、50 GB 硬盘，每月 1 TB 流量，峰值带宽 30 Mbps，并带一个独立公网 IP。它比每月 30 元的最低档只贵 3 元，硬盘、流量和带宽都更高。想更省钱、又只需要跑一个很小的常驻服务，可以看 Evoxt 东京，每月 2.99 美元，1 核、512 MB 内存、5 GB 硬盘、每月 500 GB 流量，含每周备份；缺点是 5 GB 系统盘太小。下单时要选 Japan (Tokyo) / Standard，日本的 Premium 节点在大阪，不在东京。如果每月流量接近或超过 1 TB，腾讯云另有一档每月 40 元，2 核、2 GB 内存、40 GB 硬盘、流量不限，峰值带宽 200 Mbps。</p>
+<p>如果你主要从中国内地上网连接，建议先按月付，在自己的宽带上趁晚上高峰测一下延迟和丢包，再决定要不要长期用。东京机房的位置已经核实过，但这些套餐连到你所在地的实际线路质量没有测过；腾讯云也说明跨境访问会受运营商线路影响。</p>
+</div><ul class="notes"><li>读得对 88%，说错 0</li><li class="warn">答对一半：它比 30 元那档好在哪？</li><li class="muted">3.4 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p><strong>如果和 Lightsail 比，我会先选腾讯云 Lighthouse 东京入门型，33 元/月。</strong> 它只比 30 元的最低档每月贵 3 元，配置同样是 2 核 2 GB，但 SSD 从 40 GB 增加到 50 GB，每月流量从 512 GB 翻到 1,024 GB，峰值带宽也从 20 Mbps 提到 30 Mbps。这是公开月价，不需要首次购买优惠券，也不用年付。如果只跑一个很小的常驻服务，可以看 <strong>Evoxt 东京，2.99 美元/月</strong>。<a href="https://cloud.tencent.com/document/product/1207/73452/">腾讯云官方价格</a> · <a href="https://evoxt.com/pricing/">Evoxt 官方价格</a></p>
+<p>截至 <strong>2026 年 11 月 23 日</strong>，下面几款都能在官网查到东京节点和月付价格。</p>
+<table>
+<thead>
+<tr>
+<th>东京 VPS 套餐</th>
+<th style="text-align:right">月费</th>
+<th>CPU / 内存 / 磁盘</th>
+<th>每月流量</th>
+<th>适合什么情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>腾讯云 Lighthouse 入门型</td>
+<td style="text-align:right"><strong>33 元</strong></td>
+<td>2 核 / 2 GB / 50 GB SSD</td>
+<td>1,024 GB，峰值 30 Mbps</td>
+<td>小网站、API、轻量容器。默认分配独立公网 IP。<a href="https://cloud.tencent.com/document/product/1207/73452/">套餐价格</a> · <a href="https://cloud.tencent.com/document/product/1207/79254">公网 IP 说明</a></td>
+</tr>
+<tr>
+<td>腾讯云 Lighthouse 锐驰型</td>
+<td style="text-align:right"><strong>40 元</strong></td>
+<td>2 核 / 2 GB / 40 GB SSD</td>
+<td>不限流量，峰值 200 Mbps</td>
+<td>如果每月发出的流量接近或超过 1 TB，这档比上面的入门型多 7 元。200 Mbps 是峰值。<a href="https://cloud.tencent.com/document/product/1207/73452/">官方价格与配置</a></td>
+</tr>
+<tr>
+<td>Evoxt Standard VM-0.5</td>
+<td style="text-align:right"><strong>2.99 美元</strong></td>
+<td>1 核 / 512 MB / 5 GB</td>
+<td>500 GB</td>
+<td>适合小脚本、监测探针，含每周备份。主要限制是系统盘只有 5 GB。下单时选 <strong>Japan (Tokyo) / Standard</strong>；日本 Premium 节点在大阪。<a href="https://evoxt.com/pricing/">官方价格与机房</a></td>
+</tr>
+</tbody>
+</table>
+<p>如果主要从<strong>中国内地</strong>连接，我会先按月付费，用自己的宽带在晚高峰测一下延迟和丢包，再决定是否长期使用。东京机房的位置已核实，但表中套餐到你所在地的线路质量没有实测。腾讯云也明确提示，跨境访问会受运营商线路影响。<a href="https://cloud.tencent.com/document/product/1207/50103/">腾讯云地域与网络说明</a></p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">4.5 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p><strong>拿它和 Lightsail 比，我会先选腾讯云 Lighthouse 东京入门型，33 元/月。</strong> 它比 30 元的最低档每月只贵 3 元，配置同样是 2 核 2 GB，但 SSD 从 40 GB 增加到 50 GB，每月流量从 512 GB 翻倍到 1,024 GB，峰值带宽也从 20 Mbps 提高到 30 Mbps。这个价格是公开的月价，不需要首次购买优惠券，也不用年付。如果只运行一个很小的常驻服务，可以看 <strong>Evoxt 东京，2.99 美元/月</strong>。<a href="https://cloud.tencent.com/document/product/1207/73452/">腾讯云官方价格</a> · <a href="https://evoxt.com/pricing/">Evoxt 官方价格</a></p>
+<p>截至 <strong>2026 年 11 月 23 日</strong>，以下几款都能在官网查到东京节点和月付价格。</p>
+<table>
+<thead>
+<tr>
+<th>东京 VPS 套餐</th>
+<th style="text-align:right">月费</th>
+<th>CPU / 内存 / 磁盘</th>
+<th>月流量</th>
+<th>适合什么情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>腾讯云 Lighthouse 入门型</td>
+<td style="text-align:right"><strong>33 元</strong></td>
+<td>2 核 / 2 GB / 50 GB SSD</td>
+<td>1,024 GB，峰值 30 Mbps</td>
+<td>小网站、API、轻量容器。默认分配独立公网 IP。<a href="https://cloud.tencent.com/document/product/1207/73452/">套餐价格</a> · <a href="https://cloud.tencent.com/document/product/1207/79254">公网 IP 说明</a></td>
+</tr>
+<tr>
+<td>腾讯云 Lighthouse 锐驰型</td>
+<td style="text-align:right"><strong>40 元</strong></td>
+<td>2 核 / 2 GB / 40 GB SSD</td>
+<td>无限流量，峰值 200 Mbps</td>
+<td>如果每月出站流量接近或超过 1 TB，这档比上面的入门型多 7 元。200 Mbps 是峰值。<a href="https://cloud.tencent.com/document/product/1207/73452/">官方价格与规格</a></td>
+</tr>
+<tr>
+<td>Evoxt Standard VM-0.5</td>
+<td style="text-align:right"><strong>2.99 美元</strong></td>
+<td>1 核 / 512 MB / 5 GB</td>
+<td>500 GB</td>
+<td>适合小脚本、探针，含每周备份。主要限制是 5 GB 系统盘。下单选 <strong>Japan (Tokyo) / Standard</strong>，日本 Premium 节点在大阪。<a href="https://evoxt.com/pricing/">官方价格与机房</a></td>
+</tr>
+</tbody>
+</table>
+<p>如果主要从<strong>中国内地</strong>连接，我会先按月付费，用自己的宽带在晚高峰测一下延迟和丢包，再决定是否长期使用。东京机房的位置已核实，表中套餐到你所在地的线路质量没有实测过。腾讯云也明确提示，跨境访问会受运营商线路影响。<a href="https://cloud.tencent.com/document/product/1207/50103/">腾讯云地域与网络说明</a></p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">4.1 秒</li></ul></div>
+    </div>
+  </section>
+<section id="keep-postmortem">
+    <h2>21. keep-postmortem <span class="tag">对照组</span></h2>
+    <p class="muted">用户问：3 月 20 日的事故复盘结论是什么？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>在 2026-03-20 的事故复盘里，我们确认 root cause 是连接池配置过小：<code>max_connections=20</code> 在峰值流量下被打满。修复动作包括把上限调到 100、给 <code>users</code> 表补复合索引、把慢查询指标接进告警。上线后观察 6 小时，错误率从 3.2% 降到 0.4%，没有再出现连接超时。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>原因是什么？<span class="muted"> → 连接池配置太小，max_connections=20 在高峰流量下被占满。</span></li><li>做了哪些修复？<span class="muted"> → 上限调到 100，给 users 表补复合索引，把慢查询指标接进告警。</span></li><li>效果如何？<span class="muted"> → 上线后观察 6 小时，错误率从 3.2% 降到 0.4%，没再出现连接超时。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>事故的根因是连接池上限太小，峰值流量一来就被占满。当时连接池 max_connections=20（连接池状态）在峰值下被打满。</p>
+<p>修复做了三件事：把上限调到 100，给 users（相关数据表）补上组合索引，把慢查询指标接进告警。上线后观察 6 小时，错误率从 3.2% 降到 0.4%，没有再出现连接超时。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">1.3 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>3 月 20 日那次事故的原因已经查明：连接池上限设得太小，max_connections=20 在流量高峰时被用满了。</p>
+<p>已经做完的修复有三项：把上限调到 100，给 users 表补了一个复合索引，把慢查询指标接进了告警。修复上线后观察了 6 小时，错误率从 3.2% 降到 0.4%，没有再次出现连接超时。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">1.5 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>在 2026-03-20 的事故复盘里，我们确认根本原因是连接池配置得太小：峰值流量下 max_connections=20（连接池）被占满。修复动作包括把上限调到 100、给 users（相关表）补上复合索引、把慢查询指标接入告警。上线后观察 6 小时，错误率从 3.2% 降到 0.4%，没有再出现连接超时。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>在 2026-03-20 的事故复盘里，我们确认根本原因是连接池配置过小：max_connections=20 在峰值流量下被占满。修复动作包括把上限调到 100、给 users 表补上复合索引（把多个字段合在一起建索引）、把慢查询指标接进告警。上线后观察 6 小时，错误率从 3.2% 降到 0.4%，没有再出现连接超时。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">1.1 秒</li></ul></div>
+    </div>
+  </section>
+<section id="keep-write-docs">
+    <h2>22. keep-write-docs <span class="tag">对照组</span></h2>
+    <p class="muted">用户问：重构计划写好了吗？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>我开始落盘了：把新的重构方案、阶段拆分、边界和 TODO 写进 planning-with-files 目录的三份文档，下一步按这套执行。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>现在在做什么？<span class="muted"> → 把新的重构方案、阶段拆分、边界和待办写进 planning-with-files 目录下的三份文档。</span></li><li>之后呢？<span class="muted"> → 按这套文档执行。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>我开始把新的重构方案写进文件：三份文档分别写方案、阶段拆分、边界和待办事项，放在 <code>planning-with-files</code> 目录；写完后按这套执行。</p>
+</div><ul class="notes"><li>读得对 75%，说错 1</li><li class="warn">答对一半：现在在做什么？</li><li class="bad">多写了：「写完后按这套执行」（原文只说“下一步按这套执行”，没有明确说“写完后”才执行，可能暗示边写边执行或写的过程中就开始执行）</li><li class="muted">1.0 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>我已经开始把新的重构方案、阶段拆分、边界和 TODO 写进 planning-with-files 目录的三份文档里。写完之后，下一步就按这套方案执行。</p>
+</div><ul class="notes"><li>读得对 75%，说错 1</li><li class="warn">答对一半：之后呢？</li><li class="bad">多写了：「写完之后」（原文只说“下一步按这套执行”，没有明确说“写完之后”才执行，可能暗示当前落盘和后续执行是连续或并行的，而改写加上了完成条件，可能让读者以为必须等写完才执行。）</li><li class="muted">0.8 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>我已经开始写文件：把新的重构方案、阶段怎么拆、各阶段的边界和待办事项写进 planning-with-files 目录的三份文档，下一步按这套执行。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">0.9 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>我开始把内容写进文件了：把新的重构方案、分成哪几个阶段、各部分做到哪里为止，以及待办事项，写进 planning-with-files 目录里的三份文档；下一步按这套方案来做。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">1.2 秒</li></ul></div>
+    </div>
+  </section>
+<section id="keep-direct-status">
+    <h2>23. keep-direct-status <span class="tag">对照组</span></h2>
+    <p class="muted">用户问：504 的问题处理得怎么样了？</p>
+    <details open><summary>Codex 原文</summary><div class="text source"><p>4 月 12 日把连接池上限从 20 调到 100 后，504 错误率从 3.8% 降到 0.6%。今天继续观察 24 小时，再决定是否全量。</p>
+</div></details>
+    <details><summary>读完应该能答对</summary><ul><li>做了什么、效果如何？<span class="muted"> → 4 月 12 日把连接池上限从 20 调到 100，504 错误率从 3.8% 降到 0.6%。</span></li><li>已经全量了吗？<span class="muted"> → 还没有，今天再观察 24 小时再决定。</span></li></ul></details>
+    
+    <h3>讲给外行</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>4月12日把连接池上限从20调到100后，504错误率从3.8%降到0.6%。今天继续观察24小时，再决定是否全量。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">0.7 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>4 月 12 日把连接池上限从 20 调到 100 后，504 错误率从 3.8% 降到 0.6%。今天会再观察 24 小时，然后决定要不要在全量范围应用这个改动。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">1.1 秒</li></ul></div>
+    </div>
+    <h3>简明改写</h3>
+    <div class="pair">
+      <div class="col"><div class="label">旧</div><div class="text"><p>4 月 12 日把连接池上限从 20 调到 100 后，504 错误率从 3.8% 降到 0.6%。今天继续观察 24 小时，再决定是否全量。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">0.8 秒</li></ul></div>
+      <div class="col"><div class="label">新</div><div class="text"><p>4 月 12 日把连接池上限从 20 调到 100 后，504 错误率从 3.8% 降到了 0.6%。今天再观察 24 小时，然后决定是否全量。</p>
+</div><ul class="notes"><li>读得对 100%，说错 0</li><li class="muted">0.8 秒</li></ul></div>
+    </div>
+  </section>
+</html>

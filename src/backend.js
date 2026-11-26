@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 
 const envFile = join(homedir(), ".config/minicode/siliconflow.env");
-import { translationMessages, jargonLeftIn, plainIssues, plainBudget } from "./prompt.js";
+import { translationMessages } from "./prompt.js";
 import { registerGlossary } from "./glossary.js";
 import { openPlans } from "./chat-plans.js";
 import { readRecent } from "./recent-history.js";
@@ -47,8 +47,6 @@ export async function translate(task, config, signal) {
   const { kind, target, question, history, mode = "light" } = task;
   const level = (config.levels || builtInLevels).find(item=>item.id===mode);
   if (!level) throw Error("翻译模式无效。");
-  const builtin = builtInLevels.find(item=>item.id===mode);
-  const standard = builtin && ["format","prompt","layout"].every(k=>builtin[k]===level[k]);
   if (!["report","summary"].includes(kind) || typeof target !== "string" || !target.trim()) throw Error("缺少翻译目标。");
   if (target.length > 96000) throw Error("整篇汇报超过 96000 字符，已保留原文。");
   if (typeof question !== "string" || question.length > 6000 || !Array.isArray(history) ||
@@ -58,37 +56,19 @@ export async function translate(task, config, signal) {
   const deadline = AbortSignal.any([AbortSignal.timeout(120000), ...(signal ? [signal] : [])]);
   const request = async history => restoreInlineLabels(await modelRequest(config,history,deadline),task.terms);
   const draft = await request(messages);
-  const markers = value => (value.match(/⟦T\d+⟧/g) || []).sort().join(" ");
+  // Every placeholder must survive and none may be invented. Repeats are fine: a natural
+  // translation often names the same field twice, and the renderer copies the element.
+  const markers = value => [...new Set(value.match(/⟦T\d+⟧/g) || [])].sort().join(" ");
   const required = markers(target);
   const valid = output => markers(output)===required;
-  const issues = output => mode==="deep" ? plainIssues(output,kind,target) : jargonLeftIn(output);
-  const remaining = issues(draft);
-  const fixMarkers = !valid(draft);
-  const edit = standard && (mode==="deep" ? remaining.length>0 : kind==="report" && remaining.length>=2);
-  if (!fixMarkers && !edit) return draft;
+  if (valid(draft)) return draft;
 
-  // One revision at most. Only a structurally usable result may reach the cache.
-  const instruction = fixMarkers
-    ? "上一稿没有保留排版标记。请对照 target 找回每个标记对应的原句，把原样标记放回译文相应位置。已有文字解释可以保留，移除重复标签。修订后必须恰好含有以下标记各一次："+(required || "（无标记）")
-    : (mode==="deep" ? "像同事发消息一样，先说决定，用一两句说清原因，最后说下一步。删掉重复事实、表格和术语，只保留必要标记，处理以下问题：" : "再编辑一遍整篇译文，把这些词换成普通人能理解的具体动作和结果：")+remaining.join("、");
-  try {
-    const revision = standard && mode==="deep" ? [
-      {role:"system",content:"为一个第一次听说此事的人写短消息。改写已有草稿，只留决定、一个具体原因、恢复条件。每段最多两句，每件事只说一次。保留关键数字及其含义（例如通过数、总数和失败条件）。段间换行。删掉汇报标签、表格、比喻、解释性括号。不要复述输入里的专业说法。根据语境换词，例如旧版消费者→处理消息的旧程序，投递→发送，回放→再发一次，验收矩阵→各种情况的测试，金丝雀观察窗口→先让少量用户试用，门禁→必须满足的条件，解除阻断→什么时候能继续。能直接说清楚动作就省掉术语名称。不要编造后果。排版标记会还原成原字，原样保留且各用一次，不重复写对应的字段或数值。只输出正文。"},
-      {role:"user",content:JSON.stringify({draft, ...(fixMarkers ? {source:target} : {}),
-        requiredMarkers:required,labels:task.terms,replaceOrCut:remaining,
-        maxCharacters:plainBudget(kind,target)})}
-    ] : [...messages,{role:"assistant",content:draft},{role:"user",content:
-      instruction+"。遵循本等级的提示词和格式，只输出完整修订稿。"}];
-    const revised = await request(revision);
-    const tableLines = value => value.split("\n").filter(line=>line.trim().startsWith("|")).length;
-    const layoutOK = level.layout==="free" || tableLines(target)===tableLines(revised);
-    if (valid(revised) && layoutOK &&
-        (fixMarkers || issues(revised).length<remaining.length)) return revised;
-  } catch (error) {
-    if (signal?.aborted || fixMarkers) throw error;
-  }
-  if (fixMarkers) throw Error("模型遗漏了原文排版标记，请重试。");
-  return draft;
+  // The only second call: put back placeholders the draft dropped. Anything else would double
+  // the wait for every reply, so wording is left to the single pass above.
+  const revised = await request([...messages,{role:"assistant",content:draft},{role:"user",content:
+    "上一稿丢了占位符，或写了 target 里没有的占位符。对照 target 把每个占位符放回对应的位置，其他内容不要改。必须出现的占位符："+(required || "（无）")+"。只输出完整修订稿。"}]);
+  if (valid(revised)) return revised;
+  throw Error("模型遗漏了原文排版标记，请重试。");
 }
 
 async function modelRequest(config,messages,signal) {
