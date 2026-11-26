@@ -1,0 +1,3556 @@
+{
+ "stamp": "2026-11-26-baseline",
+ "pluginModel": "deepseek-ai/DeepSeek-V4.1-Flash",
+ "judgeModel": "deepseek-ai/DeepSeek-V4-Pro",
+ "secondModel": "",
+ "rows": [
+  {
+   "id": "clash-rule-mode",
+   "title": "Clash 规则模式说明（标识符密集）",
+   "file": "04-clash-rule-mode.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P5",
+    "P9",
+    "P1"
+   ],
+   "origin": "local",
+   "output": "流量按顺序匹配：发往东京服务器自身地址、局域网、中国大陆的直连，其余走 ⟦T0⟧。运行中加载 7 条规则，首次命中即生效。\n\n命中 ⟦T1⟧ 本地域名或 ⟦T2⟧ 私有地址的直连。命中 ⟦T3⟧ 国内域名的直连；未命中，目标 IP 命中 ⟦T4⟧ 国内 IP 库也直连。\n\n最后都未命中的走 ⟦T5⟧。⟦T6⟧ 待匹配域名同样照此处理。\n\n国内域名经 ⟦T7⟧ 解析，其余域名经东京节点访问 ⟦T8⟧。\n\n系统代理端口是 ⟦T9⟧；遵循 ⟦T10⟧ 的应用走上述规则，自行直连的不经过。",
+   "ms": 5871,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.55,
+    "similarity": 0.468,
+    "numbersMissing": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6"
+    ],
+    "jargonLeft": [
+     "GEOSITE",
+     "GEOIP",
+     "直连",
+     "命中",
+     "系统代理"
+    ],
+    "tableRows": {
+     "source": 7,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "missing",
+      "note": "译文未提及当前处于规则模式"
+     },
+     {
+      "id": "f2",
+      "verdict": "partial",
+      "note": "译文说'其余走 AWS-Tokyo'，但原文是'其余走 AWS-Tokyo'，缺少'东京出口组'这一分组概念，且未明确说明 AWS-Tokyo 是节点"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文明确说'运行中加载 7 条规则'"
+     },
+     {
+      "id": "f4",
+      "verdict": "partial",
+      "note": "译文说'发往东京服务器自身地址'直连，但未区分 IPv6 和 IPv4 两条规则，也未说明目的是'避免代理绕回自身'"
+     },
+     {
+      "id": "f5",
+      "verdict": "partial",
+      "note": "译文合并了规则 3-6，但未明确区分规则 3-4 和规则 5-6 的顺序，也未说明规则 3-4 是本地域名或私有地址"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文说'最后都未命中的走 AWS-Tokyo'，对应规则 7"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": "译文说'首次命中即生效'，并举例说明域名未命中但 IP 命中国内库也直连"
+     },
+     {
+      "id": "f8",
+      "verdict": "partial",
+      "note": "译文说'国内域名经 223.5.5.5 解析，其余域名经东京节点访问 1.1.1.1'，但未提及本地域名使用系统 DNS，也未说明 223.5.5.5 是直连的阿里 DoH"
+     },
+     {
+      "id": "f9",
+      "verdict": "partial",
+      "note": "译文说'系统代理端口是 7891'，但未明确说明 HTTP、HTTPS、SOCKS 端口均为 7891，也未提及 TUN 已关闭"
+     },
+     {
+      "id": "f10",
+      "verdict": "kept",
+      "note": "译文说'遵循 127.0.0.1:7891 的应用走上述规则，自行直连的不经过'，与原文一致"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "GEOSITE",
+     "GEOIP",
+     "直连",
+     "DoH",
+     "TUN",
+     "命中",
+     "系统代理"
+    ],
+    "explained": [],
+    "grade": 3,
+    "summary": "译文保留了核心逻辑，但遗漏了规则模式、TUN 关闭、DNS 分流细节等关键事实，且未解释任何行话。"
+   },
+   "score": {
+    "factKept": 0.4,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.468
+   }
+  },
+  {
+   "id": "clash-rule-mode",
+   "title": "Clash 规则模式说明（标识符密集）",
+   "file": "04-clash-rule-mode.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P5",
+    "P9",
+    "P1"
+   ],
+   "origin": "local",
+   "output": "当前是**规则模式**。进入 Clash Verge 的流量按顺序逐条比对，先对上哪条就按哪条走：**目标是东京 VPS 自己的地址、局域网流量和中国大陆流量直连，其余走 ⟦T0⟧**。我查过正在运行的 Mihomo 内核，实际加载了下面 7 条规则。\n\n| 顺序 | 什么情况下对上 | 怎么走 |\n|---|---|---|\n| 1–2 | 要访问的地址就是东京 VPS 自己的 IPv6 或 IPv4 地址 | 直连，免得代理绕回自己 |\n| 3–4 | 域名属于 ⟦T1⟧ 的本地域名，或地址属于 ⟦T2⟧ 的私有地址 | 直连 |\n| 5 | 域名在中国大陆域名库里（⟦T3⟧） | 直连 |\n| 6 | 目标 IP 在中国大陆 IP 库里（⟦T4⟧） | 直连 |\n| 7 | 以上都没对上 | 走「东京出口」组里的 ⟦T5⟧ |\n\n规则**对上第一条就生效，不再往下看**。比如一个 ⟦T6⟧ 域名，只要在国内容域名库里，就直连；就算域名没收录，只要目标 IP 在国内容 IP 库里，也直连。\n\n**DNS 也分开处理。** 本地域名用系统 DNS；国内域名走直连的阿里 DNS（⟦T7⟧，一种加密的 DNS 查询方式），其余域名默认经东京节点去问 Cloudflare DNS（⟦T8⟧，同样是加密查询）。\n\n**macOS 的系统代理现在开着**，HTTP、HTTPS 和 SOCKS 代理端口都是 ⟦T9⟧；TUN 关着。所以，走系统代理或手动设成 ⟦T10⟧ 的应用会用上面的规则，自己直接联网的应用不经过 Clash。",
+   "ms": 3981,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.08,
+    "similarity": 0.638,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "GEOSITE",
+     "GEOIP",
+     "直连",
+     "Mihomo 内核",
+     "TUN",
+     "系统代理"
+    ],
+    "tableRows": {
+     "source": 7,
+     "output": 7
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f10",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "GEOSITE",
+     "GEOIP",
+     "直连",
+     "Mihomo 内核",
+     "TUN",
+     "系统代理"
+    ],
+    "explained": [
+     "DoH（一种加密的 DNS 查询方式）",
+     "命中（对上）"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地传达了所有关键事实，没有引入错误或遗漏，并对部分术语做了通俗解释。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.638
+   }
+  },
+  {
+   "id": "kv-cache-plan-issue",
+   "title": "/plan 与 KV cache 的 issue 草稿",
+   "file": "05-kv-cache-plan-issue.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P9",
+    "P5"
+   ],
+   "origin": "local",
+   "output": "**标题：⟦T0⟧ 把动态计划写进 system 消息，更新 Todo 状态会缩短 KV cache 的可复用前缀**\n\n### 问题描述\n\n用户用 ⟦T1⟧（查看当前计划的命令）看计划。影响缓存的是组装模型请求这一步：⟦T2⟧ 把完整的计划快照拼到第一条 system 消息末尾，再把之前的用户消息、助手回复和工具结果放在它后面。[相关代码](https://github.com/LiuMengxuan04/MiniCode/blob/e1e9389/src/plan/context.ts)\n\n比如会话已经积累了几轮文件读取和测试输出，这时 ⟦T3⟧ 只把某个 Todo 从 ⟦T4⟧ 改成 ⟦T5⟧。下一次请求里，这些历史消息的内容和顺序都没变，但它们前面的 system 消息已经不同了。\n\n对按相同 token 前缀复用 KV cache 的服务来说，两次请求能共用的连续前缀只到计划里第一个变化的 token 为止。变化点之前的部分还有机会命中，后面的对话历史就不能复用上一次请求对应的 KV 了。会话越长，频繁更新 Todo 进度可能带来越多重复计算，推高输入成本和首 token 延迟。\n\n### 建议\n\nsystem 消息只保留固定的计划使用规则，把动态计划放到对话末尾。成功的 ⟦T6⟧（更新计划命令）回包已经带完整清单，可以直接当最新快照。如果担心长工具输出把计划推得离当前位置太远，可以在距上次快照超过一定 token 距离时再追加一次提醒。这样既保住此前的请求前缀，也让模型在长任务中及时看到当前计划。",
+   "ms": 5334,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.02,
+    "similarity": 0.783,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "KV cache",
+     "system 消息",
+     "前缀",
+     "token",
+     "首 token 延迟",
+     "快照",
+     "回包"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "KV cache",
+     "system 消息",
+     "前缀",
+     "token",
+     "首 token 延迟",
+     "快照",
+     "回包"
+    ],
+    "explained": [],
+    "grade": 5,
+    "summary": "译文准确完整地传达了原文的所有关键事实，没有引入任何陷阱错误，但保留了全部专业术语未做解释。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.783
+   }
+  },
+  {
+   "id": "kv-cache-plan-issue",
+   "title": "/plan 与 KV cache 的 issue 草稿",
+   "file": "05-kv-cache-plan-issue.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P9",
+    "P5"
+   ],
+   "origin": "local",
+   "output": "**标题：⟦T0⟧（这里是原 issue 标题的占位）动态计划被写进 system 消息，Todo 状态一更新，KV cache 能复用的前缀就被缩短**\n\n### 问题描述\n\n⟦T1⟧ 命令用来查看当前计划。影响缓存的地方在组装模型请求时：⟦T2⟧ 会把整份计划快照拼到第一条 system 消息末尾，再把它前面的用户消息、助手回复和工具结果放在后面。[相关代码](https://github.com/LiuMengxuan04/MiniCode/blob/e1e9389/src/plan/context.ts)\n\n比如，会话已经积累了多轮文件读取和测试输出，这时 ⟦T3⟧ 只把某个 Todo 从 ⟦T4⟧ 改成 ⟦T5⟧。下一次请求里，这些历史消息的内容和顺序都没变，但它们前面的 system 消息已经不一样了。\n\n对于按相同 token 前缀复用 KV cache 的服务，两次请求能共享的连续前缀只到计划中第一个变化的 token 为止。变化点之前的部分仍可能命中，后面的对话历史就没法复用上一次请求对应的 KV 了。会话越长，频繁更新 Todo 进度可能带来越多重复计算，增加输入成本和首 token 延迟。\n\n### 建议\n\nsystem 消息只保留固定的计划使用规则，把动态计划放到对话末尾。成功的 ⟦T6⟧ 回包已经包含完整清单，可以直接当最新快照。若担心长工具输出让计划离当前位置太远，可以在距上次快照超过一定 token 距离时再追加一次提醒。这样既能保住此前的请求前缀，也能让模型在长任务中及时看到当前计划。",
+   "ms": 3542,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1,
+    "similarity": 0.828,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "KV cache",
+     "system 消息",
+     "前缀",
+     "token",
+     "首 token 延迟",
+     "快照",
+     "回包"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "KV cache",
+     "system 消息",
+     "token",
+     "首 token 延迟",
+     "快照",
+     "回包"
+    ],
+    "explained": [
+     "前缀"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地传达了原文的所有关键事实，没有引入任何错误或遗漏，且成功避开了两个常见陷阱。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.828
+   }
+  },
+  {
+   "id": "openteams-gaps",
+   "title": "OpenTeams 两个缺口（源码分析）",
+   "file": "09-openteams-gaps.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P5",
+    "P6",
+    "P9",
+    "P1"
+   ],
+   "origin": "local",
+   "output": "OpenTeams 目前有两个明显缺口。\n\n**第一，提示词存下来了，却说不清执行者当时到底读到了哪版共享历史。** ⟦T0⟧ 能还原 OpenTeams 交给命令行工具的文本，但里面的群历史通常只是一个文件路径。⟦T1⟧ 会在新一轮执行前重建，后台压缩完成后还可能改写同一路径；群历史太长时，主流程优先保留最近消息。所以事后即使找到那一轮的 ⟦T2⟧，只凭提示词和今天的 ⟦T3⟧，也没法证明 Codex 当时读到的是哪一版历史、哪几条旧需求。用户明明改过需求、执行者却仍用旧口径，这类问题就难查清。\n\n**第二，能追到某次运行，但原始证据有期限和容量上限。** 普通聊天运行正常结束时，成功运行最多保留最后 **256 KiB** 原始日志，失败运行最多 **1 MiB**。工作流还会清理：完成或失败超过 **5 天**后，符合条件的执行会删掉事件和部分过程记录，只保留评审、错误、审批请求等类别。因此，“一周后还能查到谁审过”和“一周后还能逐条还原所有中间动作”，保障程度并不一样。\n\n如果要在此基础上改进，我会先补一份“每次交接的证据清单”。比如 Gemini 收到“请验收 CSV 导出”时，交接记录同时固定四样东西：用户确认字段的那条消息及版本、Codex 的实现 ⟦T4⟧（这次运行的编号）、待审查的确切改动、测试结果所在的日志条目。群里仍只显示一句简明汇报，但你点开“为什么说已完成”，就能直接核对证据。对你这种平时只想和 Claude 或 Gemini 对话、又希望随时查清 Codex 做了什么的用法，这比把更多中间输出搬进群聊更有价值。",
+   "ms": 6422,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.95,
+    "similarity": 0.77,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "后台压缩",
+     "口径",
+     "run_id",
+     "工作流"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "CLI",
+     "后台压缩",
+     "口径",
+     "run_id",
+     "KiB",
+     "MiB",
+     "工作流"
+    ],
+    "explained": [
+     "这次运行的编号"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地传达了原文的所有关键事实，没有引入任何错误或遗漏，仅对 run_id 做了简短解释，其余术语保持原样。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.77
+   }
+  },
+  {
+   "id": "openteams-gaps",
+   "title": "OpenTeams 两个缺口（源码分析）",
+   "file": "09-openteams-gaps.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P5",
+    "P6",
+    "P9",
+    "P1"
+   ],
+   "origin": "local",
+   "output": "### 我认为它还有两个实质性的缺口\n\n**第一，保存了本轮提示词，仍然很难精确还原 Agent 当时读到的共享历史。** ⟦T0⟧（OpenTeams 交给命令行工具的提示词）能还原交给命令行工具的文本，但其中的群历史通常只是一个文件路径。⟦T1⟧（群历史文件）会在新一轮执行前重建，后台压缩完成后也可能改写同一路径；群历史过长时，主流程优先保留最近消息。由此推断，即使你事后找到了那一轮的 ⟦T2⟧（那一轮存下的提示词），只凭提示词和今天的 ⟦T3⟧（今天的群历史文件），也无法证明 Codex 当时读到了哪一版历史、哪几条旧需求。这对排查“用户明明改过需求，为什么执行者还用了旧口径”很关键。[上下文文件生成与后台改写](https://github.com/openteams-lab/openteams/blob/502740c0dfe930dfd58990170bf83f2d11af1258/crates/services/src/services/chat_runner/prompting.rs#L535-L635) · [超长历史截断](https://github.com/openteams-lab/openteams/blob/502740c0dfe930dfd58990170bf83f2d11af1258/crates/services/src/services/chat/context.rs#L35-L138)\n\n**第二，能追到某次运行，但原始证据有保留期限和容量上限。** 普通聊天运行正常收尾时，成功运行的原始日志最多留最后 **256 KiB**，失败运行最多留 **1 MiB**。工作流还有清理逻辑：完成或失败超过 **5 天**后，符合条件的执行会清理事件和部分过程记录，保留评审、错误、审批请求等类别。于是“一周后还能查到谁审过”与“一周后还能逐条还原所有中间动作”，保障程度不同。[日志上限](https://github.com/openteams-lab/openteams/blob/502740c0dfe930dfd58990170bf83f2d11af1258/crates/services/src/services/chat_runner/dependencies.rs#L32-L40) · [工作流清理流程](https://github.com/openteams-lab/openteams/blob/502740c0dfe930dfd58990170bf83f2d11af1258/crates/services/src/services/workflow/runtime/runner.rs#L2026-L2077) · [保留的记录类别](https://github.com/openteams-lab/openteams/blob/502740c0dfe930dfd58990170bf83f2d11af1258/crates/db/src/models/workflow_transcript.rs#L430-L443)\n\n**如果你准备在它的基础上做，我会优先补“每次交接的证据清单”。** 比如 Gemini 收到“请验收 CSV 导出”时，交接记录同时固定四样东西：用户确认字段的那条消息及版本、Codex 的实现 ⟦T4⟧（这次运行的编号）、待审查的确切 diff、测试结果所在的日志条目。群里仍然只显示一句简明汇报，但你点开“为什么说已完成”，就能直接核对证据。对你平时只想和 Claude 或 Gemini 对话、又希望随时查清 Codex 做了什么的用法，这比把更多中间输出搬进群聊更有价值。",
+   "ms": 5476,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.05,
+    "similarity": 0.956,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "后台压缩",
+     "口径",
+     "run_id",
+     "工作流"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "CLI",
+     "后台压缩",
+     "口径",
+     "run_id",
+     "KiB",
+     "MiB",
+     "工作流"
+    ],
+    "explained": [
+     "input.md（OpenTeams 交给命令行工具的提示词）",
+     "messages.jsonl（群历史文件）",
+     "run_id（这次运行的编号）"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地保留了所有事实，没有犯任何陷阱错误，并对部分术语添加了括号解释，但仍有多个行话未做通俗化处理。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.956
+   }
+  },
+  {
+   "id": "prefix-cache-probe",
+   "title": "缓存命中实测进度（commentary）",
+   "file": "06-prefix-cache-probe.md",
+   "mode": "deep",
+   "kind": "summary",
+   "patterns": [
+    "P5",
+    "P6",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "先前三次请求都返回成功，但服务端缓存未命中。以服务端统计的命中数为准。  \n长输出提醒后的第三次命中1,792个输入token，模型返回⟦T0⟧表示计划校验通过。  \n确认前缀不变时缓存为何未命中后，再继续。",
+   "ms": 2998,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.8,
+    "similarity": 0.368,
+    "numbersMissing": [
+     "200",
+     "0"
+    ],
+    "jargonLeft": [
+     "前缀",
+     "命中",
+     "PLAN_OK"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "partial",
+      "note": "原文说三次请求都返回 HTTP 200，译文只说「都返回成功」，未明确是 HTTP 200 状态码，丢失了具体协议细节。"
+     },
+     {
+      "id": "f2",
+      "verdict": "partial",
+      "note": "译文提到「前缀不变时缓存为何未命中」，但未明确说明是第二次请求完整保留了前一次的消息前缀且服务端报告命中 0，丢失了「第二次」和「命中 0」这两个关键信息。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文明确写出「第三次命中1,792个输入token」，与原文一致。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": "译文写出「模型返回PLAN_OK」，与原文一致。"
+     },
+     {
+      "id": "f5",
+      "verdict": "missing",
+      "note": "原文明确区分了「客户端保住了前缀」和「服务端实际命中」是两回事，译文未提及这一区分，只说「确认前缀不变时缓存为何未命中后，再继续」，未表达出两者是不同概念。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "前缀",
+     "命中",
+     "PLAN_OK"
+    ],
+    "explained": [],
+    "grade": 2,
+    "summary": "译文丢失了多个关键事实细节，如 HTTP 200 状态码、第二次请求命中 0 的具体数据，以及客户端保前缀与服务端实际命中是两回事的核心区分，且未解释任何行话。"
+   },
+   "score": {
+    "factKept": 0.4,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 2,
+    "tokensOk": true,
+    "similarity": 0.368
+   }
+  },
+  {
+   "id": "prefix-cache-probe",
+   "title": "缓存命中实测进度（commentary）",
+   "file": "06-prefix-cache-probe.md",
+   "mode": "light",
+   "kind": "summary",
+   "patterns": [
+    "P5",
+    "P6",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "三次实际请求都返回 HTTP 200。计划更新后的第二次请求，完整保留了前一次的消息开头部分，但服务端报告命中 0；长工具输出触发提醒后的第三次请求，命中了 1,792 个输入 token，模型返回了 ⟦T0⟧（表示计划正常）。这组数据把“客户端保住了消息开头部分”和“服务端实际命中”区分开了。",
+   "ms": 1459,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.14,
+    "similarity": 0.829,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "命中",
+     "PLAN_OK"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 5,
+    "summary": "译文准确传达了所有事实，没有犯下陷阱错误，并成功解释了大部分行话，仅保留了一个未解释的术语。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.829
+   }
+  },
+  {
+   "id": "rc042-release-gate",
+   "title": "RC-042 发布记录（截图原样）",
+   "file": "01-rc042-release-gate.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P1",
+    "P3",
+    "P4",
+    "P5",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "发布不能继续扩大，现在是⟦T0⟧。12种情况搭配的测试过了11种，没过的是⟦T1⟧。\n\n再发历史事件时没有⟦T2⟧，处理消息的旧程序把同一笔扣款重复记了账。必须同一笔扣款最多入账一次，所以⟦T3⟧的晋级被冻结。\n\n改掉旧程序认出同一笔业务的方式后，同一笔扣款用两个不同发送编号连发两次只能记一条账；12种情况全过再重新打开小流量观察窗口，才能继续。",
+   "ms": 5155,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.47,
+    "similarity": 0.27,
+    "numbersMissing": [
+     "5"
+    ],
+    "jargonLeft": [
+     "消费者",
+     "投递",
+     "观察窗口"
+    ],
+    "tableRows": {
+     "source": 7,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "missing",
+      "note": "译文未提及构建两次且产物一致"
+     },
+     {
+      "id": "f3",
+      "verdict": "missing",
+      "note": "译文未提及预发和金丝雀环境使用同一产物"
+     },
+     {
+      "id": "f4",
+      "verdict": "missing",
+      "note": "译文未提及就绪探针、鉴权握手、订单写入及回读全部通过，也未提及使用本轮新建的测试订单"
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f10",
+      "verdict": "partial",
+      "note": "译文说了修复判重逻辑、同一笔扣款用两个不同发送编号连发两次只记一条账、12种全过再重新打开小流量观察窗口，但未提及需要重跑完整验收矩阵"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t4",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 3,
+    "summary": "译文准确抓住了核心阻断原因和恢复条件，没有犯任何陷阱错误，但遗漏了构建一致性、环境制品统一、冒烟测试细节等多项事实，且恢复条件中未提及需重跑完整验收矩阵。"
+   },
+   "score": {
+    "factKept": 0.6,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.27
+   }
+  },
+  {
+   "id": "rc042-release-gate",
+   "title": "RC-042 发布记录（截图原样）",
+   "file": "01-rc042-release-gate.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P1",
+    "P3",
+    "P4",
+    "P5",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "**模拟发布记录｜RC-042｜当前状态 ⟦T0⟧（发布已暂停，不能继续扩大）**\n\n| 持续集成与交付各道检查 | 执行结果 |\n|---|---|\n| 两次打包的版本一样吗 | 合并队列用候选提交做了可复现的打包，两次产出的容器镜像摘要一致。预发环境和先让少量流量试用的环境，都按同一个摘要拉取产物。 |\n| 最基本的功能能用吗 | 就绪检查、身份验证、订单写入和读回都通过。检查使用的是本轮新建的测试订单。 |\n| 哪些组合测过了 | 按两个消费者版本、两种事件格式、三种投递场景搭配测试，共 12 种组合。11 种通过，唯一失败项为 ⟦T1⟧。 |\n| 旧消息回放会怎样 | 历史事件缺少 ⟦T2⟧（用来认出同一业务事件的编号）。旧版消费者只能改用投递编号推算幂等键，同一条业务事件重投后生成了第二条账务分录。 |\n| 能让更多请求使用新版吗 | 在 1% 流量观察期内，99% 请求的响应延迟和服务器报错比例都在预算内。但账务对账要求“同一扣款事件最多入账一次”，这条硬性条件被触发，控制器冻结了 ⟦T3⟧（把试用流量从 1% 扩大到 10%）的晋级。 |\n\n**解除阻断条件**：修复历史事件中用来认出同一业务事件的编号推算逻辑。用同一笔扣款事件、两个不同的投递编号连续回放两次，确认最终只有一条账务分录。随后重跑完整验收组合，12 种组合全部通过后，再重新开启少量流量试用观察期。",
+   "ms": 4112,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.28,
+    "similarity": 0.581,
+    "numbersMissing": [
+     "5"
+    ],
+    "jargonLeft": [
+     "消费者",
+     "投递",
+     "幂等键",
+     "账务分录",
+     "解除阻断"
+    ],
+    "tableRows": {
+     "source": 7,
+     "output": 7
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": "译文明确写了“发布已暂停，不能继续扩大”，与原文 PROMOTION_BLOCKED 含义一致。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": "译文写“两次产出的容器镜像摘要一致”，与原文“两次产出的 OCI 镜像摘要一致”意思相同。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文写“预发环境和先让少量流量试用的环境，都按同一个摘要拉取产物”，与原文“预发与金丝雀环境按同一 digest 拉取制品”一致。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": "译文写“就绪检查、身份验证、订单写入和读回都通过。检查使用的是本轮新建的测试订单”，与原文完全一致。"
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": "译文写“按两个消费者版本、两种事件格式、三种投递场景搭配测试，共 12 种组合。11 种通过”，与原文一致。"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文写“唯一失败项为 旧版消费者 × 历史事件 × 重复投递”，与原文一致。"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": "译文写“历史事件缺少 event_id（用来认出同一业务事件的编号）。旧版消费者只能改用投递编号推算幂等键，同一条业务事件重投后生成了第二条账务分录”，与原文原因和结果一致。"
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": "译文写“在 1% 流量观察期内，99% 请求的响应延迟和服务器报错比例都在预算内”，与原文“P99 延迟与 5xx 比例均在预算内”一致。"
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": "译文写“账务对账要求‘同一扣款事件最多入账一次’，这条硬性条件被触发，控制器冻结了 1% → 10%（把试用流量从 1% 扩大到 10%）的晋级”，与原文一致。"
+     },
+     {
+      "id": "f10",
+      "verdict": "kept",
+      "note": "译文写“修复历史事件中用来认出同一业务事件的编号推算逻辑。用同一笔扣款事件、两个不同的投递编号连续回放两次，确认最终只有一条账务分录。随后重跑完整验收组合，12 种组合全部通过后，再重新开启少量流量试用观察期”，与原文恢复条件一致。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t4",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [
+     "PROMOTION_BLOCKED",
+     "OCI 镜像摘要",
+     "digest",
+     "金丝雀",
+     "冒烟测试",
+     "就绪探针",
+     "鉴权握手",
+     "验收矩阵",
+     "消费者",
+     "投递",
+     "契约回放",
+     "幂等键",
+     "账务分录",
+     "P99",
+     "5xx",
+     "硬性门禁",
+     "解除阻断",
+     "断言",
+     "观察窗口"
+    ],
+    "grade": 5,
+    "summary": "译文准确传达了所有关键事实，没有犯任何常见错误，且将全部专业术语用通俗语言解释清楚，读起来流畅易懂。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.581
+   }
+  },
+  {
+   "id": "rsi-experiment-design",
+   "title": "Agent RSI 实验设计（研究黑话）",
+   "file": "08-rsi-experiment-design.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P1",
+    "P4",
+    "P7",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "先让研发 Agent 长期做开发，正式比较前冻结它写出的规则库。记录开发成本，并从一开始留出它看不到的商品组或场景。\n\n再单独测一次改进器：保存初代和改进后的版本，给它们相同的新起始版本、初始记忆、反馈和预算，让它们各自改进，再加一组固定规则搜索做对照。在事先留出的任务类型上比较三组最终产物的盲测得分，以及达到指定分数所需的成本。\n\n信息泄露要单独查：两组用相同开发数据，一组多轮重复使用同一验证面板，另一组在预先分配的新面板上拿相同次数、相同粒度的反馈，最后共用一个封存测试集。如果只有前者验证分持续上升，首先说明是验证集重用造成了自适应过拟合；要主张答案泄露，还需样本重合、可访问的答案副本、检索命中记录等具体证据。\n\n对 Mass 这种小数据集，拆分面板会增大分数波动，这项实验最好在有更多样本的扩展集上确认。",
+   "ms": 8730,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.48,
+    "similarity": 0.536,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "冻结",
+     "改进器",
+     "盲测",
+     "自适应过拟合",
+     "封存测试集",
+     "产物"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "partial",
+      "note": "译文只说了记录开发成本和留出看不到的商品组或场景，但漏掉了原文中解释为什么必须这样做的那句：否则名义上被冻结的规则实际上已经吸收了此前几十轮验证反馈。"
+     },
+     {
+      "id": "f3",
+      "verdict": "partial",
+      "note": "译文只说了记录开发调用量、验证查询次数和单题推理成本，但漏掉了原文中关于预算上限相同即可、规则系统省下的钱也算结果这一句。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "partial",
+      "note": "译文说了加固定规则搜索做对照、在事先留出的任务类型上比较盲测得分和达到指定分数所需的成本，但漏掉了原文中每组用多个独立随机种子重跑这一要求。"
+     },
+     {
+      "id": "f6",
+      "verdict": "missing",
+      "note": "译文完全没有提到这个实验能区分两种情形：一个系统留下了更好的解题代码；一个系统获得了更强的能力，能再次产出更好的解题代码。"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "冻结",
+     "改进器",
+     "盲测",
+     "自适应过拟合",
+     "封存测试集"
+    ],
+    "explained": [
+     "起始版本",
+     "任务类型",
+     "产物"
+    ],
+    "grade": 3,
+    "summary": "译文基本保留了主要实验步骤，但漏掉了几个关键限定条件（如冻结规则可能已吸收反馈、预算上限说明、多种子重跑）和一个核心区分目的，导致信息不完整。"
+   },
+   "score": {
+    "factKept": 0.56,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.536
+   }
+  },
+  {
+   "id": "rsi-experiment-design",
+   "title": "Agent RSI 实验设计（研究黑话）",
+   "file": "08-rsi-experiment-design.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P1",
+    "P4",
+    "P7",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "## 怎样让实验真正检验“递归”\n\n**第一阶段，让 Agent 长期做研发；开始正式比较前，把它写出来的规则库固定住，不再继续改动。** 可以让研发 Agent 看开发数据、分析误差、改 Python、维护 SQLite，这个项目正适合长期迭代。但要记录开发花了多少，并从一开始就留出它看不到的商品组或场景。否则，名义上已固定下来的规则，实际上已经吸收了此前几十轮验证反馈。正式实验里，两边从同一个初始版本出发，记录开发调用量、验证查询次数和最终每道题的推理成本。两边预算上限相同即可；规则系统省下的钱也算结果。\n\n**第二阶段，单独测一次改进器。** 保存初代改进器和进化后的改进器，给它们两份完全相同的新初始版本、同样的初始记忆、同样的反馈和预算，让它们各自改进。再加一组固定规则搜索作为第三组。在预先留出的任务族上，比较三组最终产物的盲测分，以及达到指定分数要花多少成本。各组用多个独立种子重跑完整迭代过程。这个实验能区分两种情况：一个系统留下了更好的解题代码；一个系统本身变得更强，能再次产出更好的解题代码。已有工作也开始做类似的受保护对照，论文贡献要落到具体基准、规则边界和实测效应上。[改进器配对评估的文献审计](https://arxiv.org/abs/2610.27610) · [固定预算下的改进器对照实验](https://huggingface.co/blog/daicelabs/ri-is-not-rsi)\n\n**信息泄露值得单独作为一个假设来查。** 最省事的做法是：两组用相同的开发数据，但一组在多轮里反复用同一套验证题，另一组在预先分好的新验证题上获得次数相同、粗细相同的反馈，最后共用一个封存的测试集。如果只有前者验证分一直涨，首先说明的是**反复用同一套验证题造成的自适应过拟合**。若想进一步说答案泄露，就需要样本重合、能拿到的答案副本、检索命中记录等具体证据，并在切断这条通道后重跑。像 Mass 这种小数据集，拆开验证题会加大分数波动，这项实验最好在有更多样本的扩展集上确认。[验证集自适应重用研究](https://arxiv.org/abs/2609.33180)",
+   "ms": 5418,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.02,
+    "similarity": 0.777,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "改进器",
+     "盲测",
+     "种子",
+     "自适应过拟合",
+     "任务族",
+     "产物"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": "译文明确说“开始正式比较前，把它写出来的规则库固定住，不再继续改动”，与原文“冻结它写出来的规则库”一致。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": "译文包含“记录开发花了多少”和“从一开始就留出它看不到的商品组或场景”，并解释了否则“实际上已经吸收了此前几十轮验证反馈”，与原文完全一致。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文说“从同一个初始版本出发，记录开发调用量、验证查询次数和最终每道题的推理成本。两边预算上限相同即可；规则系统省下的钱也算结果”，与原文一致。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": "译文说“给它们两份完全相同的新初始版本、同样的初始记忆、同样的反馈和预算，让它们各自改进”，与原文“完全相同的新 starter、同样的初始记忆、同样的反馈和预算”一致。"
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": "译文包含“再加一组固定规则搜索作为第三组”“在预先留出的任务族上，比较三组最终产物的盲测分，以及达到指定分数要花多少成本”“各组用多个独立种子重跑完整迭代过程”，与原文一致。"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文说“一个系统留下了更好的解题代码；一个系统本身变得更强，能再次产出更好的解题代码”，与原文“留下了更好的解题代码”和“获得了更强的能力，能再次产出更好的解题代码”一致。"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": "译文说“两组用相同的开发数据，但一组在多轮里反复用同一套验证题，另一组在预先分好的新验证题上获得次数相同、粗细相同的反馈，最后共用一个封存的测试集”，与原文一致。"
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": "译文说“如果只有前者验证分一直涨，首先说明的是反复用同一套验证题造成的自适应过拟合。若想进一步说答案泄露，就需要样本重合、能拿到的答案副本、检索命中记录等具体证据，并在切断这条通道后重跑”，与原文一致。"
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": "译文说“像 Mass 这种小数据集，拆开验证题会加大分数波动，这项实验最好在有更多样本的扩展集上确认”，与原文一致。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "盲测",
+     "种子",
+     "自适应过拟合",
+     "封存测试集",
+     "任务族",
+     "产物"
+    ],
+    "explained": [
+     "冻结 → 固定住，不再继续改动",
+     "starter → 初始版本",
+     "改进器 → 改进器（未解释，但保留原词）"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地保留了所有事实，没有犯任何陷阱错误，仅部分术语未做解释，整体质量很高。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.777
+   }
+  },
+  {
+   "id": "tcp-handshake-filtering",
+   "title": "IPv4 连不上东京 VPS 是否被墙",
+   "file": "03-tcp-handshake-filtering.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P7",
+    "P9",
+    "P6"
+   ],
+   "origin": "local",
+   "output": "可以。**就算有网络过滤，东京那台服务器也可能收到你的连接请求。** 比如过滤只拦从东京回你电脑这个方向，去东京的第一个包照样能到。\n\n这次服务器确实收到了你电脑发来的 ⟦T0⟧（TCP 建连请求），随后多次发出 ⟦T1⟧（应答），但你的电脑最后还是连接超时。由于没有在你电脑的网卡上抓包，我们能确认服务器发出了应答，却无法确认应答到了你电脑。这次连接也还没进入 REALITY 握手阶段。\n\n所以，**服务端收到 ⟦T2⟧，可以排除“第一个包在去东京的路上就被拦下”这一种情况。** 两家运营商都复现了同样的超时，这与回程被过滤相容，但回程路由故障也能造成同样现象。现有证据既不能排除 GFW，也不足以认定是 GFW。\n\n下一步：在你电脑上抓包，看服务器的应答有没有到。应答到了，问题在握手之后；应答没到，就继续查回程路径。",
+   "ms": 5735,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.09,
+    "similarity": 0.712,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "SYN",
+     "SYN-ACK",
+     "抓包",
+     "REALITY 握手",
+     "回程路由故障",
+     "GFW",
+     "相容"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "SYN",
+     "SYN-ACK",
+     "REALITY 握手",
+     "GFW"
+    ],
+    "explained": [
+     "抓包",
+     "回程过滤",
+     "回程路由故障",
+     "相容"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地保留了所有关键事实，没有犯任何陷阱错误，并适当解释了一些行话，同时增加了下一步建议，整体质量很高。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.712
+   }
+  },
+  {
+   "id": "tcp-handshake-filtering",
+   "title": "IPv4 连不上东京 VPS 是否被墙",
+   "file": "03-tcp-handshake-filtering.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P7",
+    "P9",
+    "P6"
+   ],
+   "origin": "local",
+   "output": "可以。**即使网络中存在过滤，东京 VPS 仍可能收到你的连接请求。** 例如，如果过滤只发生在数据从东京返回你电脑的方向，那么你发往东京的第一个包仍能到达。\n\n这次服务器确实收到了你电脑发来的 ⟦T0⟧（TCP 建连请求）。VPS 随后多次发出 ⟦T1⟧（应答），但你的电脑最终还是连接超时。由于没有抓取客户端网卡的流量，我们能确认服务器发出了应答，却无法确认应答是否到达你的电脑。这次连接也还没进入 REALITY 握手阶段。[TCP 三次握手规范](https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5)\n\n所以，**既然服务端收到了 ⟦T2⟧，就可以排除“第一个包在去东京的路上就被拦下了”这一种情况。** 两家运营商都复现了同样的超时；这与回程过滤相符，但回程路由故障也能产生相同现象。现有证据既不能排除 GFW，也不足以认定是 GFW。",
+   "ms": 2374,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.02,
+    "similarity": 0.841,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "SYN",
+     "SYN-ACK",
+     "REALITY 握手",
+     "回程过滤",
+     "回程路由故障",
+     "GFW"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "SYN",
+     "SYN-ACK",
+     "REALITY 握手",
+     "回程过滤",
+     "回程路由故障",
+     "GFW"
+    ],
+    "explained": [
+     "抓包"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地保留了所有关键事实，没有引入任何陷阱错误，仅对“抓包”一词做了通俗化解释，其余术语保持原样，整体质量很高。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.841
+   }
+  },
+  {
+   "id": "translator-030-report",
+   "title": "插件 0.3.0 更新汇报（含样例里的修复步骤）",
+   "file": "02-translator-030-report.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P6",
+    "P8",
+    "P3"
+   ],
+   "origin": "local",
+   "output": "新版已安装到本机功能包目录，默认模型仍是⟦T0⟧。\n\n排版问题已修好，译文会照原文的字号和表格样式来排。用RC-042重建测试页后，两列表格、五个数据行和加粗文字都保住了。\n\n改写现在也管表头和行名，不只是正文。实测里“验收矩阵”写成了“哪些组合测过了”，“金丝雀晋级”写成了“能让更多请求使用新版吗”。\n\n暂停原因是旧程序把同一笔扣款再次收到的通知当成新事件，多记了一笔账，所以新版流量停在1%，暂缓扩大到10%。改写要求至少保留90%的原始事实，数字、失败原因和恢复条件必须完整保留。\n\n本次核对到12种组合中11种通过。修复后需用两个不同的发送编号再发一次同一笔扣款，确认只记一笔账，再重测全部组合。\n\n回归页和真实模型输出已验过，正在运行的Codex窗口还没确认加载新版。请在Codex Tweaks → 功能包 → ⟦T1⟧点“更新”，按宿主提示确认新版权限。",
+   "ms": 6957,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.67,
+    "similarity": 0.598,
+    "numbersMissing": [
+     "0.3.0"
+    ],
+    "jargonLeft": [
+     "功能包",
+     "回归页",
+     "验收矩阵",
+     "金丝雀晋级",
+     "宿主"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": "译文开头说“新版已安装到本机功能包目录”，与原文“0.3.0 已写入本机功能包目录”一致。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": "译文明确写出“默认模型仍是deepseek-ai/DeepSeek-V4.1-Flash”，与原文一致。"
+     },
+     {
+      "id": "f3",
+      "verdict": "missing",
+      "note": "原文明确说“修复了中文冒号附近加粗失效的问题”，译文只说“排版问题已修好”，未提及具体是中文冒号加粗失效。"
+     },
+     {
+      "id": "f4",
+      "verdict": "partial",
+      "note": "原文列出字号、字重、行高、列宽比例、对齐、内边距和分隔线，译文只说“照原文的字号和表格样式来排”，丢失了字重、行高、列宽比例、对齐、内边距和分隔线等细节。"
+     },
+     {
+      "id": "f5",
+      "verdict": "partial",
+      "note": "原文说“正文与单元格的字号均与测试原文一致”，译文只说“两列表格、五个数据行和加粗文字都保住了”，未提及字号一致。"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文提到改写覆盖表头和行名，并给出了相同的例子，与原文一致。"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": "译文说“改写要求至少保留90%的原始事实”，未提自动评分，与原文“没有自动评分”一致。"
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": "译文说“本次核对到12种组合中11种通过。修复后需用两个不同的发送编号再发一次同一笔扣款，确认只记一笔账，再重测全部组合”，与原文样例内容一致，且未写成用户待办。"
+     },
+     {
+      "id": "f9",
+      "verdict": "missing",
+      "note": "原文说“汇报若仍有多处已识别的黑话，插件最多会多调用一次模型做修订”，译文未提及此点。"
+     },
+     {
+      "id": "f10",
+      "verdict": "kept",
+      "note": "译文说“正在运行的Codex窗口还没确认加载新版”，与原文一致。"
+     },
+     {
+      "id": "f11",
+      "verdict": "kept",
+      "note": "译文说“请在Codex Tweaks → 功能包 → ct-codex-translator点‘更新’，按宿主提示确认新版权限”，与原文一致。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": "译文将修复步骤作为样例内容陈述，未写成用户或插件接下来要做的事。"
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": "译文明确说“正在运行的Codex窗口还没确认加载新版”，未说已生效。"
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": "译文只说“改写要求至少保留90%的原始事实”，未说已被测量或达到。"
+     }
+    ],
+    "jargonLeft": [
+     "功能包",
+     "回归页",
+     "宿主"
+    ],
+    "explained": [
+     "验收矩阵",
+     "金丝雀晋级",
+     "投递编号"
+    ],
+    "grade": 4,
+    "summary": "译文基本保留了关键事实和样例内容，但丢失了排版修复的具体细节（如中文冒号加粗）和黑话修订机制，部分术语已解释但仍有少量行话未处理。"
+   },
+   "score": {
+    "factKept": 0.64,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 4,
+    "tokensOk": true,
+    "similarity": 0.598
+   }
+  },
+  {
+   "id": "translator-030-report",
+   "title": "插件 0.3.0 更新汇报（含样例里的修复步骤）",
+   "file": "02-translator-030-report.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P6",
+    "P8",
+    "P3"
+   ],
+   "origin": "local",
+   "output": "**本机功能包目录里已经装好 CodeX Translator 0.3.0，默认模型仍是 ⟦T0⟧。**\n\n**排版**：中文冒号附近加粗不生效的问题修好了。译文现在会照原文实际用的字号、字重、行高来排，表格的列宽比例、对齐、内边距和分隔线也会照搬。用你给的 RC-042 记录重建测试页后，真实模型的译文保住了两列表格、五个数据行和加粗文字，正文和单元格的字号都与测试原文一致。\n\n**把话说明白**：现在表头、行名和整段正文都会改写。模型可以调整顺序、删掉重复内容、补上理解因果所需的解释。RC-042 的实测输出里，原来按不同版本、数据格式和发送方式搭配起来逐项测试的那张表，标题变成了**「哪些组合测过了」**；能让更多请求使用新版的这一步，标题变成了**「能让更多请求使用新版吗」**。译文也说明了暂停的原因：旧版程序把同一笔扣款再次收到的通知当成了新事件，多记了一笔账，所以新版先只让 1% 的流量使用，暂缓扩大到 10%。\n\n提示词把**至少保留 90% 的原始事实**设为改写目标，并要求完整保留数字、失败原因和恢复条件。这个比例没有自动评分。本次样例核对到 **12 种搭配中 11 种通过**，还确认了修复后要用两个不同的投递编号重放同一笔扣款，确认只记一笔账，再重测全部搭配。汇报里如果仍有多处已识别出的黑话，插件最多会再调用一次模型做修订。\n\n目前已验证回归页和真实模型输出，正在运行的 Codex 窗口还没确认加载新版。在 **Codex Tweaks → 功能包 → ⟦T1⟧** 点「更新」，按宿主提示确认新版权限即可。[0.3.0 安装包](outputs/CodeX-Translator-0.3.0.zip) · [完整提示词](outputs/CodeX-Translator/src/prompt.js)",
+   "ms": 8486,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.09,
+    "similarity": 0.797,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "功能包",
+     "回归页",
+     "投递编号",
+     "宿主"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f9",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f10",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f11",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "功能包",
+     "回归页",
+     "宿主"
+    ],
+    "explained": [
+     "验收矩阵",
+     "金丝雀晋级",
+     "投递编号"
+    ],
+    "grade": 5,
+    "summary": "译文准确完整地保留了所有关键事实，成功避开了所有陷阱，并对大部分行话进行了通俗化解释，仅保留少量必要术语。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.797
+   }
+  },
+  {
+   "id": "translator-repro-commentary",
+   "title": "复现两个问题（commentary，含「收紧」）",
+   "file": "07-translator-repro-commentary.md",
+   "mode": "deep",
+   "kind": "summary",
+   "patterns": [
+    "P2",
+    "P6",
+    "P8"
+   ],
+   "origin": "local",
+   "output": "发现两个问题：中文冒号后接正文时加粗会显示成星号。表格译文没沿用原表的列宽和字号。\n先让少量用户试用通过后，再处理行名里残留的术语。\n测试各种情况已通过。第一轮真实输出仍把术语留在行名里，我会把标准收紧到表头、行名和正文都能独立读懂。",
+   "ms": 2738,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.01,
+    "similarity": 0.599,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "收紧",
+     "行名"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "partial",
+      "note": "原文说加粗“可能”显示成星号，译文去掉了“可能”，变成确定会显示成星号，丢失了限定词。"
+     },
+     {
+      "id": "f2",
+      "verdict": "contradicted",
+      "note": "原文说“版式测试已通过”，译文说“测试各种情况已通过”，扩大了范围，且前面加了“先让少量用户试用通过后”这个原文没有的条件，与原文事实相反。"
+     },
+     {
+      "id": "f3",
+      "verdict": "partial",
+      "note": "原文明确写出“验收矩阵”“契约回放”两个具体术语，译文只说“术语”，丢失了具体内容。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": true,
+      "note": "译文说“先让少量用户试用通过后，再处理行名里残留的术语”，暗示问题已部分解决，而原文没有这个意思。"
+     }
+    ],
+    "jargonLeft": [
+     "收紧",
+     "行名"
+    ],
+    "explained": [],
+    "grade": 2,
+    "summary": "译文丢失了关键限定词“可能”，把已通过的版式测试说成需要用户试用，还漏掉了两个具体术语名称，整体准确性较差。"
+   },
+   "score": {
+    "factKept": 0.25,
+    "contradicted": 1,
+    "trapsViolated": 1,
+    "grade": 2,
+    "tokensOk": true,
+    "similarity": 0.599
+   }
+  },
+  {
+   "id": "translator-repro-commentary",
+   "title": "复现两个问题（commentary，含「收紧」）",
+   "file": "07-translator-repro-commentary.md",
+   "mode": "light",
+   "kind": "summary",
+   "patterns": [
+    "P2",
+    "P6",
+    "P8"
+   ],
+   "origin": "local",
+   "output": "我复现了两个具体问题：中文冒号后紧接正文时，加粗标记可能显示成星号；译文表格也没有沿用原表的列宽和字号。版式测试已通过。第一轮真实模型输出仍把“验收矩阵”“契约回放”留在行名里，我会把验收标准收紧到表头、行名和正文都能独立读懂。",
+   "ms": 1037,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1,
+    "similarity": 1,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "收紧",
+     "验收标准",
+     "行名"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "verdict": "violated",
+      "note": "译文没有提到黑话问题已经解决，但也没有说它没解决，只是陈述了事实。根据trap定义，需要判断是否犯了错误。原文没有说黑话问题已解决，译文也没有说，所以没有违反。",
+      "violated": false
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 5,
+    "summary": "译文完全保留了所有关键事实，没有遗漏或歪曲，也没有犯下所列的陷阱错误，但保留了原文中的行话未做解释。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 1
+   }
+  },
+  {
+   "id": "vps-price-control",
+   "title": "东京 VPS 价格对比（对照组）",
+   "file": "10-vps-price-control.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "C0",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "选东京便宜的VPS，我首选腾讯云入门型，每月33元。它比30元最低档只贵3元，但流量从512 GB增到每月1,024 GB。\n\n只跑很小的常驻服务，可看Evoxt东京，每月2.99美元；主要限制是系统盘只有5 GB。\n\n如果主要从中国内地连接，先按月付，用自家宽带在晚高峰测延迟和丢包，再决定是否长期用。价格截至2026年11月23日。",
+   "ms": 6469,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.25,
+    "similarity": 0.373,
+    "numbersMissing": [
+     "2",
+     "40",
+     "50",
+     "20",
+     "200",
+     "1",
+     "7",
+     "500"
+    ],
+    "jargonLeft": [
+     "常驻服务",
+     "丢包"
+    ],
+    "tableRows": {
+     "source": 5,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "partial",
+      "note": "只提了流量从512 GB增到1,024 GB，漏掉了同为2核2 GB、SSD从40 GB增到50 GB、峰值带宽从20 Mbps提到30 Mbps这些关键对比信息"
+     },
+     {
+      "id": "f3",
+      "verdict": "missing",
+      "note": "译文中完全没有提到这是公开月价、不需要首购券或年付"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "missing",
+      "note": "译文中完全没有提到锐驰型40元套餐"
+     },
+     {
+      "id": "f6",
+      "verdict": "partial",
+      "note": "只提了系统盘5 GB的限制，漏掉了1核512 MB、500 GB流量、含每周备份、下单选Japan (Tokyo) / Standard、日本Premium在大阪这些信息"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "verdict": false,
+      "note": "",
+      "violated": false
+     },
+     {
+      "id": "t2",
+      "verdict": false,
+      "note": "",
+      "violated": false
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 3,
+    "summary": "译文保留了核心推荐和价格，但丢失了大量关键规格对比信息（如CPU、SSD容量、带宽变化），且完全遗漏了锐驰型套餐和公开月价无需首购券等重要事实。"
+   },
+   "score": {
+    "factKept": 0.5,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.373
+   }
+  },
+  {
+   "id": "vps-price-control",
+   "title": "东京 VPS 价格对比（对照组）",
+   "file": "10-vps-price-control.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "C0",
+    "P9"
+   ],
+   "origin": "local",
+   "output": "**想要类似 Lightsail 的便宜东京 VPS，我会先选腾讯云 Lighthouse 东京入门型，33 元/月。** 它比 30 元的最低档每月只贵 3 元，配置同为 2 核 2 GB，但 SSD 从 40 GB 增至 50 GB，月流量从 512 GB 翻到 1,024 GB，峰值带宽也从 20 Mbps 提到 30 Mbps。这个价格是公开月价，不用首购券，也不用年付。只跑一个很小的常驻服务，则可以看 **Evoxt 东京，2.99 美元/月**。[腾讯云官方价格](https://cloud.tencent.com/document/product/1207/73452/) · [Evoxt 官方价格](https://evoxt.com/pricing/)\n\n截至 **2026 年 11 月 23 日**，以下几款都能在官网核对到东京节点和月付价格。\n\n| 东京 VPS 套餐 | 月费 | CPU / 内存 / 磁盘 | 月流量 | 适合什么情况 |\n|---|---:|---|---|---|\n| 腾讯云 Lighthouse 入门型 | **33 元** | 2 核 / 2 GB / 50 GB SSD | 1,024 GB，峰值 30 Mbps | 小网站、API、轻量容器。默认分配独立公网 IP。[套餐价格](https://cloud.tencent.com/document/product/1207/73452/) · [公网 IP 说明](https://cloud.tencent.com/document/product/1207/79254) |\n| 腾讯云 Lighthouse 锐驰型 | **40 元** | 2 核 / 2 GB / 40 GB SSD | 不限量，峰值 200 Mbps | 如果每月出站接近或超过 1 TB，这档比上面的入门型多 7 元。200 Mbps 是峰值。[官方价格与规格](https://cloud.tencent.com/document/product/1207/73452/) |\n| Evoxt Standard VM-0.5 | **2.99 美元** | 1 核 / 512 MB / 5 GB | 500 GB | 适合小脚本、探针，含每周备份。主要限制是 5 GB 系统盘。下单选 **Japan (Tokyo) / Standard**，日本 Premium 节点在大阪。[官方价格与机房](https://evoxt.com/pricing/) |\n\n如果主要从**中国内地**连接，我会先月付，用自己的宽带在晚高峰测一下延迟和丢包，再决定是否长期用。东京机房的位置已核实，表中套餐到你所在地的线路质量没有实测。腾讯云也明确提示，跨境访问会受运营商线路影响。[腾讯云地域与网络说明](https://cloud.tencent.com/document/product/1207/50103/)",
+   "ms": 4524,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.02,
+    "similarity": 0.958,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "峰值带宽",
+     "常驻服务",
+     "丢包",
+     "首购券"
+    ],
+    "tableRows": {
+     "source": 5,
+     "output": 5
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "峰值带宽",
+     "常驻服务",
+     "丢包",
+     "首购券"
+    ],
+    "explained": [],
+    "grade": 5,
+    "summary": "译文完全保留了原文的所有关键事实，没有改动任何数字或规格，也没有将未经实测的线路质量说成已实测，整体准确无误。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.958
+   }
+  },
+  {
+   "id": "web-banned-words",
+   "title": "被社区点名禁用的隐喻词（改写示范）",
+   "file": "12-web-banned-words.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P1",
+    "P4",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "上传失败最多重试3次，间隔依次为1秒、4秒、9秒；只有网络或服务器端错误才重试，请求本身有错则直接失败。同一文件用同一固定编号，重试多次不会多存一份。\n\n8种测试过了7种；未过的是超时后手动取消再重试，取消后标记未清，下一轮修。\n\n上线前还需与CDN真实联调，并与运维对齐回滚报警判断标准。",
+   "ms": 4310,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.57,
+    "similarity": 0.231,
+    "numbersMissing": [
+     "5"
+    ],
+    "jargonLeft": [],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "partial",
+      "note": "译文说「上传接口的重试逻辑已经写完并合进主分支」，但原文只提到「重试这块已经收口并落到主分支」，未明确是「上传接口」的重试逻辑，限定范围可能不准确。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "partial",
+      "note": "译文说「确认回滚开关可用」，但原文是「把回滚哨兵的口径跟运维对齐」，强调的是对齐判断标准而非确认开关可用，意思有偏差。"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 4,
+    "summary": "译文基本保留了所有关键事实，但将「重试收口」限定为「上传接口」以及将「对齐回滚哨兵口径」改为「确认回滚开关可用」存在轻微偏差，未犯陷阱错误，行话全部保留未解释。"
+   },
+   "score": {
+    "factKept": 0.71,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 4,
+    "tokensOk": true,
+    "similarity": 0.231
+   }
+  },
+  {
+   "id": "web-banned-words",
+   "title": "被社区点名禁用的隐喻词（改写示范）",
+   "file": "12-web-banned-words.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P1",
+    "P4",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "**重试逻辑已经做完，并合入主分支。** 最多重试 3 次，等待时间按次数平方增长（1 秒、4 秒、9 秒）；只有网络出错和服务器返回 5xx 才重试，返回 4xx 就直接失败。防止重复处理靠的是按文件固定的幂等键（用来认出同一份文件、避免重复处理的标识），同一文件重试不会多出一份，这部分不需要再留手动关掉重试的开关。\n\n测试跑了一组搭配用例，8 个里有 7 个通过，唯一没通过的是「超时后手动取消再重试」：取消后，标记本次已取消的状态没有被清掉，我留到下一轮再处理。\n\n上线前还差两件：一是与 CDN 那边接上，做一次真实链路联调；二是把回滚哨兵（用来判断何时该回滚的监控信号）的判定口径与运维对齐。旧的断点续传逻辑没有改动，关键改动在防重键怎么生成，这一点已单独写在 PR 描述里。",
+   "ms": 2959,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.29,
+    "similarity": 0.487,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "链路",
+     "哨兵 / 硬性门禁"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "partial",
+      "note": "译文只说了「确认回滚开关可用」，但原文是「把回滚哨兵的口径跟运维对齐」，强调的是判定口径对齐，不是确认开关可用"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 4,
+    "summary": "事实基本完整，但回滚哨兵部分把「对齐口径」简化成了「确认可用」，丢失了关键限定"
+   },
+   "score": {
+    "factKept": 0.86,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 4,
+    "tokensOk": true,
+    "similarity": 0.487
+   }
+  },
+  {
+   "id": "web-buried-skip",
+   "title": "跳过项和待办埋在段落中间（含崩溃退出码）",
+   "file": "16-web-buried-skip.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P10",
+    "P5",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "**服务在测试环境已经能正常用：启动、健康检查、首页访问都返回 200。**\n\n之前内存上限设得太低，容器被杀过一次，退出码 137；从 512Mi 提到 1Gi 后就起来了。这个上限要不要长期保留，需要你决定，测试环境的资源本来就紧。\n\n14 个单元测试通过 13 个，1 个被跳过，当前状态为 ⟦T0⟧（跳过的那个测试）：测试库连不上，所以数据库迁移没在真实环境验证过。另外日志级别已从 debug 调成 info。监控告警还没接，这部分我没动。",
+   "ms": 3084,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.02,
+    "similarity": 0.533,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "退出码 137",
+     "skip / 跳过",
+     "迁移",
+     "健康检查",
+     "内存上限"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t4",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "退出码 137",
+     "OOM",
+     "skip / 跳过",
+     "幂等性",
+     "迁移",
+     "健康检查",
+     "内存上限"
+    ],
+    "explained": [],
+    "grade": 5,
+    "summary": "译文完整准确地保留了所有事实，没有犯任何陷阱错误，但所有行话均未做解释，直接保留原文术语。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.533
+   }
+  },
+  {
+   "id": "web-buried-skip",
+   "title": "跳过项和待办埋在段落中间（含崩溃退出码）",
+   "file": "16-web-buried-skip.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P10",
+    "P5",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "**已部署到 test 环境，服务能正常启动，健康检查返回 200，首页也返回 200。**\n\n部署前，容器曾因内存不足被强制结束过一次（退出码 137）。把内存上限从 512Mi 提高到 1Gi 后，服务正常启动了。这个上限要不要长期保留，需要你决定；测试环境的资源池本来就紧张。\n\n14 个单元测试中 13 个通过，另外 1 个被跳过：⟦T0⟧（数据库迁移测试），原因是连不上测试库，所以迁移这部分没在真实环境中验证过。另外，我把日志级别从 debug 收紧到了 info。\n\n监控方面还没接入告警，这一步我没有动。",
+   "ms": 1818,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.16,
+    "similarity": 0.604,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "skip / 跳过",
+     "迁移",
+     "健康检查",
+     "内存上限"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t4",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 5,
+    "summary": "译文完整准确地保留了所有事实，没有犯任何陷阱错误，但所有行话均未解释，直接保留原文术语。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 5,
+    "tokensOk": true,
+    "similarity": 0.604
+   }
+  },
+  {
+   "id": "web-codexisms-en",
+   "title": "英文 idiolect：seam / load-bearing / cut over（对照原文语境）",
+   "file": "14-web-codexisms-en.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P11",
+    "P1",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "关键在接口：这次只动了认证适配器这一个接缝。调用方的代码没改，新实现放在原有接口后面，所以每个调用的地方写法都不变。\n\n有个坑已经查到并记下来了：把 ⟦T0⟧（刷新间隔）设成 0，适配器会每 200 毫秒刷新一次。我只加了注释，没有加拦截，因为拦截会把真实的配置错误藏起来。\n\n旧的令牌刷新路径还留着，用一个开关控制，不用重新部署就能切回去。测试 12 个过了 11 个；没过的是模拟同时刷新，看起来是原来就有的竞争问题，不是这次改动带进来的。\n\n计划周四切换。在那之前，我想先在预发布环境把开关两个方向各跑一遍——不想等到生产上才知道结果。",
+   "ms": 2463,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.38,
+    "similarity": null,
+    "numbersMissing": [],
+    "jargonLeft": [],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "missing",
+      "note": "原文未提及认证适配器已合并进主分支，只描述了改动内容和计划切换时间。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": "译文准确表达了改动集中在适配器接口，调用方代码未变，新实现放在原有接口后面。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文正确保留了旧令牌刷新路径仍存在、由开关控制、无需重新部署即可切回的信息。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": "译文完整保留了将 refresh_interval 设为 0 会导致每 200ms 刷新一次，以及只加注释未加拦截的原因。"
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": "译文准确传达了 12 个测试通过 11 个，失败用例是模拟并发刷新，且是原有竞争问题。"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文正确表达了计划周四切换，之前需在预发布环境将开关两个方向各跑一遍。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "verdict": false,
+      "note": "",
+      "violated": false
+     },
+     {
+      "id": "t2",
+      "verdict": false,
+      "note": "",
+      "violated": false
+     },
+     {
+      "id": "t3",
+      "verdict": false,
+      "note": "",
+      "violated": false
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 0,
+    "summary": "译文准确传达了原文的核心事实，未引入陷阱错误，仅遗漏了未在原文中出现的合并进主分支信息，并保留了一个未解释的英文术语。"
+   },
+   "judgeError": "这一条的评审没给出有效分数，需要重跑"
+  },
+  {
+   "id": "web-codexisms-en",
+   "title": "英文 idiolect：seam / load-bearing / cut over（对照原文语境）",
+   "file": "14-web-codexisms-en.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P11",
+    "P1",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "先说结构上的关键点：这里唯一真正承重的接缝是 auth adapter 的接口。调用方代码我没有动，新实现放在原有约定后面，所以每个调用点的写法都保持不变。\n\n我发现并记录了一个容易踩的坑：把 ⟦T0⟧（刷新间隔）设成 0，adapter 会每 200ms 刷新一次。我只加了注释，没有加拦截，因为拦截会把真实的配置错误藏起来，让人看不见。\n\n旧的 token 刷新路径还留着，由开关控制，所以不用重新部署就能退回去。测试：12 个里过了 11 个；失败的那个模拟并发刷新，看起来是原本就存在的竞态，不是这次改动引入的。\n\n切换暂定周四。在那之前，我想在预发布环境把开关两个方向都跑一遍——总比在生产上才知道答案好。",
+   "ms": 2444,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.43,
+    "similarity": null,
+    "numbersMissing": [],
+    "jargonLeft": [],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "missing",
+      "note": "原文没有提到新认证适配器已合并进主分支，只描述了改动内容和计划。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 4,
+    "summary": "译文准确传达了原文的核心事实，没有犯所列陷阱，且对大部分行话做了通俗解释，但遗漏了关于新实现已合并的事实（f1），并保留了 refresh_interval 未解释。"
+   },
+   "score": {
+    "factKept": 0.83,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 4,
+    "tokensOk": true,
+    "similarity": null
+   }
+  },
+  {
+   "id": "web-hedging-templates",
+   "title": "认识论对冲句式（kenvix 点名的坏话术）",
+   "file": "13-web-hedging-templates.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P7",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "早高峰的 502 先处理一个已知问题：小时级报表任务已从 60 个连接改成分批、最多 10 个。\n连接池峰值 100/100，但还不能断定它是唯一原因。接下来看两个早高峰的数据，再决定是否调大连接池。",
+   "ms": 3447,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.3,
+    "similarity": 0.28,
+    "numbersMissing": [
+     "9",
+     "00"
+    ],
+    "jargonLeft": [],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "missing",
+      "note": "译文只提了“早高峰的 502”，没有限定在每天 9:00–10:00，也没有说其他时间没有。"
+     },
+     {
+      "id": "f2",
+      "verdict": "partial",
+      "note": "译文说了“连接池峰值 100/100”，但没提连接等待超时后网关返回 502 这个因果链。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文说“小时级报表任务已从 60 个连接改成分批、最多 10 个”，保留了原事实。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": "译文说“还不能断定它是唯一原因”，与原文意思一致。"
+     },
+     {
+      "id": "f5",
+      "verdict": "missing",
+      "note": "译文完全没有提到 DNS 和网关重启被排除。"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文说“接下来看两个早高峰的数据，再决定是否调大连接池”，与原文一致。"
+     },
+     {
+      "id": "f7",
+      "verdict": "missing",
+      "note": "译文没有提到慢查询日志还没看。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "verdict": "violated",
+      "note": "译文说“先处理一个已知问题”，可能暗示问题已解决，但原文强调还需观察。",
+      "violated": false
+     },
+     {
+      "id": "t2",
+      "verdict": "not violated",
+      "note": "",
+      "violated": false
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 3,
+    "summary": "译文保留了部分关键事实，但遗漏了时间限定、排除项和未查部分，且可能暗示问题已解决，与原文的谨慎态度不符。"
+   },
+   "score": {
+    "factKept": 0.43,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.28
+   }
+  },
+  {
+   "id": "web-hedging-templates",
+   "title": "认识论对冲句式（kenvix 点名的坏话术）",
+   "file": "13-web-hedging-templates.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P7",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "你最想弄清楚的，其实是这半小时里的 502 是不是由数据库引起的。具体说明如下。\n\n502 都集中在每天 9:00–10:00。至于它是不是由数据库连接池引起，要看这个时段上游的活跃连接是否已经用满，不能直接画等号。目前观察到的是：连接池峰值达到 100/100；连接等待超时后，网关返回 502。这说明连接池耗尽和 502 出现在同一时间段，但不能因此认定它是唯一原因。可以排除的是 DNS 问题和网关重启，因为这期间网关没有重启记录。\n\n这次处理的是尚未解决的连接池参数问题：早高峰有一个小时级报表任务会同时开 60 个连接，我已把它改成分批查询，同时将并发降到 10。是否需要进一步调大连接池，要看接下来两个早高峰的监控数据。慢查询日志还没看，这部分不在本轮处理范围内。",
+   "ms": 2353,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.05,
+    "similarity": 0.755,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "画等号"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "partial",
+      "note": "译文说「我已把它改成分批查询，同时将并发降到 10」，但原文是「我已把它改成分批查询、并发降到 10，是否需要进一步调大连接池，要看接下来两个早高峰的监控数据」，译文把「是否需要进一步调大连接池」这一后续判断条件遗漏了，只保留了已执行的动作。"
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "画等号"
+    ],
+    "explained": [],
+    "grade": 4,
+    "summary": "译文准确传达了大部分关键事实，仅在 f6 上遗漏了「是否需要进一步调大连接池」这一后续判断条件，整体质量较高。"
+   },
+   "score": {
+    "factKept": 0.86,
+    "contradicted": 0,
+    "trapsViolated": 0,
+    "grade": 4,
+    "tokensOk": true,
+    "similarity": 0.755
+   }
+  },
+  {
+   "id": "web-human-label-mix",
+   "title": "反引号里是中文人话标签（标识符与人话混排）",
+   "file": "15-web-human-label-mix.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P4",
+    "P2",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "记录 ⟦T0⟧ 并给它一条 ⟦T1⟧。接口返回结构已写入 ⟦T2⟧ 文档，字段按 ⟦T3⟧ 分三类。\n\n⟦T4⟧ 已连真实服务，输出去掉凭据。⟦T5⟧ 用 ⟦T6⟧ 连跑两次，看重启后是否先显示旧数据。\n\n还差 ⟦T7⟧：代理失效、登录过期。你手动处理后再跑一次，能连上并取到整理后的字段就算通过。",
+   "ms": 4034,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.64,
+    "similarity": 0.509,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "真实形状",
+     "真链路冒烟",
+     "依赖三态",
+     "夹具",
+     "回归对照",
+     "人肉前置",
+     "形状"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "partial",
+      "note": "译文提到了记录真实形状和真链路冒烟，但未明确说明要把数据结构写进文档（只说了已写入），且未体现这是目标而非已完成动作。"
+     },
+     {
+      "id": "f2",
+      "verdict": "missing",
+      "note": "译文只说了字段按依赖三态分三类，未列出可用、降级、不可用这三个具体状态。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文明确说真链路冒烟已连真实服务，输出去掉凭据，与原文一致。"
+     },
+     {
+      "id": "f4",
+      "verdict": "partial",
+      "note": "译文提到夹具用回归对照连跑两次，但未说明夹具引用的是研究文档里的返回结构。"
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": "译文说代理失效、登录过期，需手动处理后再跑一次，与原文一致。"
+     },
+     {
+      "id": "f6",
+      "verdict": "contradicted",
+      "note": "译文把缓存验证方式（连跑两次，看重启后是否先显示旧数据）错误地归到了夹具/回归对照上，而原文明确这是缓存验证方式，与夹具无关。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": true,
+      "note": "译文直接使用了「依赖三态」「人肉前置」等反引号中文标签，未做解释。"
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 3,
+    "summary": "译文保留了部分关键事实，但丢失了依赖三态的具体内容，错误地将缓存验证归到夹具上，且直接照搬了多个行话标签未做解释。"
+   },
+   "score": {
+    "factKept": 0.33,
+    "contradicted": 1,
+    "trapsViolated": 1,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.509
+   }
+  },
+  {
+   "id": "web-human-label-mix",
+   "title": "反引号里是中文人话标签（标识符与人话混排）",
+   "file": "15-web-human-label-mix.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P4",
+    "P2",
+    "P6"
+   ],
+   "origin": "web",
+   "output": "**目标：把 ⟦T0⟧ 写进文档固定下来，并给它配一条 ⟦T1⟧。**\n\n接口实际返回的结构已经写进 ⟦T2⟧ 下的文档，字段按 ⟦T3⟧ 分成三类：可用、降级、不可用。⟦T4⟧ 已经连上真实服务跑通，输出里只有整理后的字段和失败说明，不含任何凭据类信息。\n\n⟦T5⟧ 引用的是研究文档里的返回结构，用来作为 ⟦T6⟧。缓存是否有效，验证方法是连跑两次，看“杀掉应用再重启后，是否先显示旧数据”。\n\n还剩一个 ⟦T7⟧：本机环境文件里的代理指向的地址已经失效，登录状态过期、刷新也失败，需要你手动处理后再跑一次。",
+   "ms": 2036,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.09,
+    "similarity": 0.765,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "真实形状",
+     "真链路冒烟",
+     "依赖三态",
+     "夹具",
+     "回归对照",
+     "人肉前置",
+     "形状"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": true,
+      "note": "译文直接照抄了『依赖三态』『人肉前置』，未做解释"
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [
+     "真实形状",
+     "钉在纸上",
+     "真链路冒烟",
+     "夹具",
+     "回归对照"
+    ],
+    "grade": 4,
+    "summary": "译文准确保留了所有事实，但直接照抄了'依赖三态'和'人肉前置'两个行话，未做解释，违反了t1陷阱。"
+   },
+   "score": {
+    "factKept": 1,
+    "contradicted": 0,
+    "trapsViolated": 1,
+    "grade": 4,
+    "tokensOk": true,
+    "similarity": 0.765
+   }
+  },
+  {
+   "id": "web-verb-smear",
+   "title": "单字动词与口语动作（社区原句拼接）",
+   "file": "11-web-verb-smear.md",
+   "mode": "deep",
+   "kind": "report",
+   "patterns": [
+    "P2",
+    "P10"
+   ],
+   "origin": "web",
+   "output": "**已经改完。** 我查看了项目代码：⟦T0⟧（播放器里写定的格式选项）现在把音视频格式写死成 flv/m4a。我改成按 ⟦T1⟧（用来生成格式选项的字段）生成可选项，没做多余兼容，单测和冒烟都通过。\n\n接下来我会核对上下游约定，避免路由和文件名基准出错；顺手清掉组件里遗留的调试输出，再跑一次构建，确认模板和脚本没被改坏。\n\n构建已启动，跑完我会再看一眼类型检查和打包结果。",
+   "ms": 2788,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 0.98,
+    "similarity": 0.603,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "冒烟",
+     "上下游约定",
+     "顺手",
+     "跑一次"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "partial",
+      "note": "译文说「PlayerView（播放器里写定的格式选项）现在把音视频格式写死成 flv/m4a」，但原文是「PlayerView 现在把音频/视频写死成 flv/m4a」，译文多加了「播放器里写定的格式选项」这个解释，且把「现在」保留为当前状态，但原文是过去状态（已查看并确认），整体意思接近但丢失了「已经查看并确认」的时态。"
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": "译文「改成按 related（用来生成格式选项的字段）生成可选项」与原文「把它改成基于 related 字段生成可选项」一致。"
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": "译文「没做多余兼容」与原文「没有做兼容兜底」意思一致。"
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": "译文「单测和冒烟都通过」与原文一致。"
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": "译文「顺手清掉组件里遗留的调试输出」与原文一致。"
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": "译文「核对上下游约定，避免路由和文件名基准出错」与原文「补一圈上下游约定，避免把路由和文件名基准搞错」意思一致。"
+     },
+     {
+      "id": "f7",
+      "verdict": "contradicted",
+      "note": "原文说「跑了一次构建，确认没有把模板和脚本改坏」，是已经跑完并确认；译文说「再跑一次构建，确认模板和脚本没被改坏」，变成了将来要跑，与原文时态相反。"
+     },
+     {
+      "id": "f8",
+      "verdict": "kept",
+      "note": "译文「构建已启动」与原文「构建已经起了」一致。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [
+     "冒烟",
+     "单测"
+    ],
+    "explained": [
+     "related（用来生成格式选项的字段）"
+    ],
+    "grade": 3,
+    "summary": "译文基本保留了核心事实，但把已完成的构建确认错译成将来动作，且部分术语未解释，整体可读但有一处关键时态错误。"
+   },
+   "score": {
+    "factKept": 0.75,
+    "contradicted": 1,
+    "trapsViolated": 0,
+    "grade": 3,
+    "tokensOk": true,
+    "similarity": 0.603
+   }
+  },
+  {
+   "id": "web-verb-smear",
+   "title": "单字动词与口语动作（社区原句拼接）",
+   "file": "11-web-verb-smear.md",
+   "mode": "light",
+   "kind": "report",
+   "patterns": [
+    "P2",
+    "P10"
+   ],
+   "origin": "web",
+   "output": "**已经处理完了。** 我没有靠猜，直接查看了项目代码。⟦T0⟧（指原来的问题所在）现在把音频和视频的格式固定成了 flv 和 m4a；我按你的要求，改成根据 ⟦T1⟧（指用来判断可选格式的那个字段）生成可选项，写代码时没有做额外的兼容处理，单元测试和基本流程测试都通过了。\n\n我又核对了一遍上下游的约定，避免把路由和文件名的基准搞错。顺手清掉了组件里遗留的调试输出，然后跑了一次构建，确认没有把模板和脚本改坏。\n\n构建已经启动了，等它跑完我会再看一眼类型检查和打包结果。",
+   "ms": 2097,
+   "checks": {
+    "tokens": {
+     "ok": true,
+     "missing": [],
+     "duplicated": [],
+     "unknown": []
+    },
+    "lengthRatio": 1.22,
+    "similarity": 0.64,
+    "numbersMissing": [],
+    "jargonLeft": [
+     "顺手"
+    ],
+    "tableRows": {
+     "source": 0,
+     "output": 0
+    }
+   },
+   "judge": {
+    "facts": [
+     {
+      "id": "f1",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f2",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f3",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f4",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f5",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f6",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f7",
+      "verdict": "kept",
+      "note": ""
+     },
+     {
+      "id": "f8",
+      "verdict": "partial",
+      "note": "原文只说构建已经起了（启动），译文说构建已经启动了，但未提及完成过，与原文一致，但原文未说完成，译文也未说完成，此处 partial 判断有误，应为 kept。"
+     }
+    ],
+    "traps": [
+     {
+      "id": "t1",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t2",
+      "violated": false,
+      "note": ""
+     },
+     {
+      "id": "t3",
+      "violated": false,
+      "note": ""
+     }
+    ],
+    "jargonLeft": [],
+    "explained": [],
+    "grade": 0,
+    "summary": ""
+   },
+   "judgeError": "这一条的评审没给出有效分数，需要重跑"
+  }
+ ]
+}
