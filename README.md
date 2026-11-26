@@ -18,6 +18,18 @@ ihatejargons 不改动原回复，只在它上方加几个按钮，让你换一�
 
 改写只依据原文：做完的、计划中的、只是猜测的事，都按原文的状态写，不会替 Codex 回答你没得到答案的问题。
 
+## 效果
+
+**上传接口的重试逻辑**：先在原文里点开虚线词。同一个「收」字，「收口」解释成已经做完，「再收」解释成留到下一轮再修。接着追问一句，再依次切到简明改写、讲给外行。
+
+<p align="center"><img src="assets/demo-retry.gif" width="820" alt="演示：Codex 关于重试逻辑的回复，先看原文注释和追问，再切到简明改写和讲给外行"></p>
+
+**列表页接后端**：「状态投影」「回包」「真回包」都按这段对话解释。讲给外行开头直接说出结论：列表页现在用的还是假数据。
+
+<p align="center"><img src="assets/demo-list-page.gif" width="820" alt="演示：Codex 关于列表页接后端的回复，原文注释、简明改写、讲给外行"></p>
+
+两段回复取自评测集（`banned-words`、`wire-projection`），注释、追问回答和改写都是插件用默认模型实际生成的。窗口是按 Codex Desktop 重画的示意，黄色高亮只是为了在动图里标出难懂的词，插件本身不会加。
+
 ## 安装
 
 1. 安装 [Codex Tweaks](https://github.com/codex-tweaks/codex-tweaks)。
